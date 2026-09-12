@@ -1,0 +1,1654 @@
+<!doctype html>
+<html lang="pt-BR" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f9f9f7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0d0d0d" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Obras">
+<meta name="format-detection" content="telephone=no">
+<title>Controle de Obras — Orçamento x Realizado</title>
+<style>
+:root{
+  color-scheme: light;
+  --surface-1:#fcfcfb;
+  --plane:#f9f9f7;
+  --ink:#0b0b0b;
+  --ink-2:#52514e;
+  --ink-muted:#898781;
+  --grid:#e1e0d9;
+  --axis:#c3c2b7;
+  --border:rgba(11,11,11,.10);
+  --series-1:#2a78d6;   /* orçado */
+  --series-2:#eb6834;   /* realizado */
+  --seq-100:#cde2fb;
+  --good:#0ca30c;
+  --warning:#fab219;
+  --serious:#ec835a;
+  --critical:#d03b3b;
+  --good-text:#006300;
+  --shadow:0 1px 2px rgba(11,11,11,.05), 0 8px 24px rgba(11,11,11,.05);
+  --r:12px;
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --surface-1:#1a1a19;
+  --plane:#0d0d0d;
+  --ink:#ffffff;
+  --ink-2:#c3c2b7;
+  --ink-muted:#898781;
+  --grid:#2c2c2a;
+  --axis:#383835;
+  --border:rgba(255,255,255,.10);
+  --series-1:#3987e5;
+  --series-2:#d95926;
+  --seq-100:#184f95;
+  --good-text:#0ca30c;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.35);
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;background:var(--plane);color:var(--ink);
+  font:14px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+button,input,select,textarea{font:inherit;color:inherit}
+.app{display:flex;min-height:100vh}
+
+/* ---------- sidebar ---------- */
+.side{
+  width:232px;flex:0 0 232px;background:var(--surface-1);
+  border-right:1px solid var(--border);padding:20px 14px;
+  display:flex;flex-direction:column;gap:22px;position:sticky;top:0;height:100vh;
+}
+.brand{display:flex;align-items:center;gap:10px;padding:0 6px}
+.brand .mark{width:30px;height:30px;border-radius:9px;background:var(--series-1);display:grid;place-items:center;color:#fff;font-weight:700;font-size:13px}
+.brand h1{font-size:14px;margin:0;font-weight:650;letter-spacing:-.01em}
+.brand small{display:block;color:var(--ink-muted);font-weight:400;font-size:11.5px}
+.nav{display:flex;flex-direction:column;gap:2px}
+.nav button{
+  display:flex;align-items:center;gap:10px;width:100%;text-align:left;
+  background:none;border:0;padding:9px 10px;border-radius:9px;cursor:pointer;
+  color:var(--ink-2);font-weight:500;
+}
+.nav button:hover{background:var(--plane)}
+.nav button[aria-current="true"]{background:var(--seq-100);color:var(--ink);font-weight:600}
+.nav svg{width:17px;height:17px;flex:0 0 17px;stroke:currentColor;fill:none;stroke-width:1.7}
+
+/* ---------- menu do topo ---------- */
+.menuwrap{position:relative}
+.menu{
+  position:absolute;right:0;top:calc(100% + 6px);z-index:70;min-width:196px;
+  background:var(--surface-1);border:1px solid var(--border);border-radius:11px;box-shadow:var(--shadow);
+  padding:5px;display:none;flex-direction:column;gap:2px
+}
+.menu.on{display:flex}
+.menu button{background:none;border:0;text-align:left;padding:9px 11px;border-radius:8px;cursor:pointer;font-weight:500;color:var(--ink-2)}
+.menu button:hover{background:var(--plane);color:var(--ink)}
+
+/* ---------- layout ---------- */
+main{flex:1;min-width:0;padding:22px 26px 60px}
+.topbar{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;margin-bottom:20px}
+.topbar h2{margin:0;font-size:20px;font-weight:650;letter-spacing:-.015em}
+.topbar .sub{color:var(--ink-muted);font-size:12.5px;margin-top:2px}
+.tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+
+.btn{
+  border:1px solid var(--border);background:var(--surface-1);padding:7px 13px;border-radius:9px;
+  cursor:pointer;font-weight:550;display:inline-flex;align-items:center;gap:7px;white-space:nowrap;
+}
+.btn:hover{background:var(--plane)}
+.btn.primary{background:var(--series-1);border-color:transparent;color:#fff}
+.btn.primary:hover{filter:brightness(1.07)}
+.btn.ghost{background:none}
+.btn.sm{padding:4px 9px;font-size:12.5px;border-radius:7px}
+.btn.danger{color:var(--critical)}
+select.btn,input.btn{padding:7px 10px}
+
+.card{background:var(--surface-1);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow)}
+.card-h{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:16px 18px 0}
+.card-h h3{margin:0;font-size:14.5px;font-weight:620}
+.card-h p{margin:2px 0 0;color:var(--ink-muted);font-size:12px}
+
+/* ---------- kpis ---------- */
+.kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:14px}
+@media(max-width:1240px){.kpis{grid-template-columns:repeat(4,1fr)}}
+@media(max-width:760px){.kpis{grid-template-columns:repeat(2,1fr)}}
+.kpi{padding:14px 16px;min-width:0}
+.kpi .label{color:var(--ink-muted);font-size:12px}
+.kpi .value{font-size:clamp(15px,1.25vw,19px);font-weight:650;letter-spacing:-.02em;margin-top:5px}
+.kpi.hero{grid-column:span 2}
+.kpi.hero .value{font-size:clamp(28px,3vw,40px);line-height:1.12;margin-top:4px}
+@media(max-width:700px){.kpi.hero{grid-column:span 1}}
+.kpi .delta{font-size:12px;margin-top:5px;color:var(--ink-2);display:flex;align-items:center;gap:5px}
+.dot{width:8px;height:8px;border-radius:50%;flex:0 0 8px;display:inline-block}
+.meter{height:8px;border-radius:99px;background:var(--seq-100);margin-top:10px;overflow:hidden}
+.meter i{display:block;height:100%;border-radius:99px;background:var(--series-1)}
+.grid2{display:grid;grid-template-columns:1.3fr 1fr;gap:14px;margin-bottom:14px;align-items:start}
+.col{display:flex;flex-direction:column;gap:14px}
+@media(max-width:1050px){.grid2{grid-template-columns:1fr}}
+
+/* ---------- charts ---------- */
+.chart{padding:12px 12px 16px}
+svg{display:block;width:100%;overflow:visible}
+.legend{display:flex;gap:16px;padding:2px 18px 0;flex-wrap:wrap}
+.legend span{display:flex;align-items:center;gap:7px;color:var(--ink-2);font-size:12.5px}
+.legend i{width:11px;height:11px;border-radius:3px;display:block}
+.tip{
+  position:fixed;z-index:60;pointer-events:none;background:var(--surface-1);
+  border:1px solid var(--border);box-shadow:var(--shadow);border-radius:10px;padding:9px 11px;
+  font-size:12.5px;min-width:150px;opacity:0;transform:translateY(-4px);transition:opacity .1s
+}
+.tip.on{opacity:1}
+.tip b{display:block;margin-bottom:5px;font-size:12.5px}
+.tip .row{display:flex;justify-content:space-between;gap:16px;color:var(--ink-2)}
+.tip .row b{display:inline;margin:0;color:var(--ink);font-variant-numeric:tabular-nums}
+
+/* ---------- tables ---------- */
+.tablewrap{overflow-x:auto;padding:6px 4px 4px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{
+  text-align:left;font-weight:560;color:var(--ink-muted);font-size:11.5px;
+  text-transform:uppercase;letter-spacing:.04em;padding:9px 12px;border-bottom:1px solid var(--grid);white-space:nowrap
+}
+td{padding:10px 12px;border-bottom:1px solid var(--grid);vertical-align:middle}
+tbody tr:last-child td{border-bottom:0}
+tbody tr:hover{background:var(--plane)}
+.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+tfoot td{font-weight:650;border-top:1px solid var(--axis);border-bottom:0;background:var(--plane)}
+.badge{display:inline-flex;align-items:center;gap:6px;padding:2px 9px;border-radius:99px;font-size:11.5px;font-weight:550;border:1px solid var(--border);white-space:nowrap}
+.tag{display:inline-block;padding:2px 8px;border-radius:6px;background:var(--plane);border:1px solid var(--border);font-size:11.5px;color:var(--ink-2)}
+
+/* ---------- forms / modal ---------- */
+.modal-bg{position:fixed;inset:0;background:rgba(11,11,11,.44);display:none;z-index:80;align-items:center;justify-content:center;padding:18px}
+.modal-bg.on{display:flex}
+.modal{background:var(--surface-1);border-radius:14px;width:min(560px,100%);max-height:90vh;overflow:auto;box-shadow:0 24px 60px rgba(0,0,0,.3)}
+.modal header{padding:18px 20px 0;display:flex;justify-content:space-between;align-items:center}
+.modal header h3{margin:0;font-size:16px;font-weight:650}
+.modal .body{padding:16px 20px}
+.modal footer{padding:0 20px 20px;display:flex;gap:8px;justify-content:flex-end}
+.field{margin-bottom:13px}
+.field label{display:block;font-size:12px;color:var(--ink-2);margin-bottom:5px;font-weight:530}
+.field input,.field select,.field textarea{
+  width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:9px;background:var(--plane)
+}
+.field input:focus,.field select:focus,.field textarea:focus{outline:2px solid var(--series-1);outline-offset:-1px;background:var(--surface-1)}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+@media(max-width:620px){.row2,.row3{grid-template-columns:1fr}}
+.hint{font-size:11.5px;color:var(--ink-muted);margin-top:4px}
+
+.filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;align-items:center}
+.empty{padding:46px 20px;text-align:center;color:var(--ink-muted)}
+.empty h4{color:var(--ink);margin:0 0 6px;font-size:15px}
+.alerts{display:grid;grid-template-columns:repeat(auto-fit,minmax(310px,1fr));gap:10px;margin-bottom:14px}
+.alert{display:flex;gap:10px;align-items:flex-start;padding:11px 14px;border-radius:10px;border:1px solid var(--border);background:var(--surface-1);font-size:13px}
+.alert .ic{width:18px;height:18px;flex:0 0 18px;margin-top:1px}
+.hidden{display:none!important}
+
+/* ---------- fotos ---------- */
+.thumbs{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.thumb{position:relative;width:76px;height:76px;border-radius:9px;overflow:hidden;border:1px solid var(--border);background:var(--plane)}
+.thumb img{width:100%;height:100%;object-fit:cover;display:block;cursor:zoom-in}
+.thumb button{position:absolute;top:3px;right:3px;width:20px;height:20px;border-radius:50%;border:0;
+  background:rgba(11,11,11,.68);color:#fff;font-size:13px;line-height:1;cursor:pointer;display:grid;place-items:center;padding:0}
+.thumb button:hover{background:var(--critical)}
+.drop{border:1px dashed var(--axis);border-radius:10px;padding:14px;text-align:center;color:var(--ink-muted);cursor:pointer;font-size:12.5px}
+.drop:hover{border-color:var(--series-1);color:var(--ink-2)}
+.fotobadge{display:inline-flex;align-items:center;gap:4px;border:0;background:none;cursor:pointer;color:var(--ink-2);font-size:12px;padding:2px 4px;border-radius:6px}
+.fotobadge:hover{background:var(--plane);color:var(--ink)}
+.lightbox{position:fixed;inset:0;z-index:120;background:rgba(11,11,11,.9);display:none;align-items:center;justify-content:center;flex-direction:column;gap:12px;padding:24px}
+.lightbox.on{display:flex}
+.lightbox img{max-width:min(1100px,94vw);max-height:80vh;border-radius:10px;box-shadow:0 24px 60px rgba(0,0,0,.5)}
+.lightbox .lbbar{display:flex;gap:10px;align-items:center;color:#fff;font-size:13px}
+.lightbox .lbbar button{background:rgba(255,255,255,.14);border:0;color:#fff;padding:7px 14px;border-radius:9px;cursor:pointer;font-weight:550}
+.lightbox .lbbar button:hover{background:rgba(255,255,255,.26)}
+
+/* ---------- toast ---------- */
+.toast{position:fixed;left:50%;bottom:26px;transform:translate(-50%,14px);z-index:140;background:var(--ink);color:var(--surface-1);
+  padding:10px 18px;border-radius:99px;font-size:13px;font-weight:530;opacity:0;transition:.18s;pointer-events:none;box-shadow:var(--shadow)}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+/* ============================================================
+   Tablet — a barra lateral encolhe para ícones
+   ============================================================ */
+@media(max-width:1000px) and (min-width:821px){
+  .side{width:76px;flex:0 0 76px;padding:18px 10px;align-items:center}
+  .brand h1, .brand small{display:none}
+  .nav button{justify-content:center;padding:11px 0;font-size:0;gap:0}
+  .nav svg{width:20px;height:20px;flex:0 0 20px}
+  main{padding:20px 18px 48px}
+}
+
+/* ============================================================
+   Celular — navegação vai para a base, tabelas viram cartões
+   ============================================================ */
+@media(max-width:820px){
+  body{font-size:15px}
+  .app{flex-direction:column}
+  .side{
+    order:2;width:100%;flex:none;height:auto;top:auto;position:fixed;left:0;right:0;bottom:0;z-index:75;
+    flex-direction:row;gap:0;padding:6px 4px calc(6px + env(safe-area-inset-bottom));
+    border-right:0;border-top:1px solid var(--border);box-shadow:0 -2px 14px rgba(11,11,11,.06)
+  }
+  .brand{display:none}
+  .nav{flex-direction:row;width:100%;gap:0}
+  .nav button{
+    flex:1;flex-direction:column;gap:3px;align-items:center;justify-content:center;
+    padding:7px 2px;font-size:10.5px;line-height:1.2;text-align:center;border-radius:10px;min-width:0
+  }
+  .nav button[aria-current="true"]{background:none;color:var(--series-1)}
+  .nav svg{width:21px;height:21px;flex:0 0 21px}
+
+  main{padding:14px 14px calc(84px + env(safe-area-inset-bottom));width:100%}
+  .topbar{gap:10px;margin-bottom:14px;position:sticky;top:0;z-index:60;
+    background:var(--plane);padding:10px 0 8px;margin-top:-14px}
+  .topbar h2{font-size:18px}
+  .topbar > div:first-child{flex:1 1 100%}
+  .tools{width:100%;gap:8px}
+  #obraSel{flex:1 1 100%;min-width:0}
+  #btnNovoOrc{flex:1}
+  #btnNovoGasto{flex:2}
+  .menuwrap{flex:0 0 auto}
+
+  .card-h{padding:14px 14px 0}
+  .chart{padding:8px 4px 12px}
+  .legend{padding:2px 14px 0}
+  .filters{gap:7px}
+  .filters select,.filters input{flex:1 1 46%;min-width:0}
+  .filters input[data-f="q"]{flex:1 1 100%;min-width:0!important}
+  .btn{padding:9px 14px}
+  .btn.sm{padding:7px 11px}
+
+  /* tabelas largas viram lista de cartões */
+  table.stack{display:block}
+  table.stack thead{display:none}
+  table.stack tbody,table.stack tfoot{display:block}
+  table.stack tr{display:flex;flex-direction:column;padding:11px 14px;border-bottom:1px solid var(--grid)}
+  table.stack td.pri{order:-2;display:block;text-align:left;padding-bottom:5px}
+  table.stack td.pri::before{display:none}
+  table.stack td.sec{order:-1}
+  table.stack tbody tr:last-child{border-bottom:0}
+  table.stack td{
+    display:flex;align-items:baseline;justify-content:space-between;gap:14px;
+    border:0;padding:3px 0;text-align:right
+  }
+  table.stack td::before{
+    content:attr(data-l);color:var(--ink-muted);font-size:10.5px;text-transform:uppercase;
+    letter-spacing:.04em;flex:0 0 auto;text-align:left;padding-top:2px
+  }
+  table.stack td:not([data-l]){justify-content:flex-end;padding-top:8px}
+  table.stack td[data-l=""]::before{content:none}
+  table.stack td:empty{display:none}
+  table.stack .hide-sm{display:none}
+  table.stack td.forte{font-size:15px;font-weight:600}
+  table.stack tfoot tr{background:var(--plane);border-top:1px solid var(--axis)}
+  .tablewrap{overflow-x:visible;padding:0}
+
+  /* modal vira folha vinda de baixo */
+  .modal-bg{padding:0;align-items:flex-end}
+  .modal{width:100%;max-height:94vh;border-radius:16px 16px 0 0}
+  .modal .body{padding:14px 16px calc(14px + env(safe-area-inset-bottom))}
+  .modal header{padding:16px 16px 0}
+  .modal footer{padding:0 16px calc(18px + env(safe-area-inset-bottom));flex-wrap:wrap}
+  .modal footer .btn{flex:1}
+  .modal footer .btn.primary{flex:1 1 100%;order:-1;padding:12px}
+  /* 16px evita o zoom automático do Safari ao focar um campo */
+  .field input,.field select,.field textarea{font-size:16px;padding:11px 12px}
+  .thumb{width:88px;height:88px}
+  .drop{padding:18px}
+  .menu{position:fixed;right:12px;left:auto;top:auto;bottom:calc(78px + env(safe-area-inset-bottom));min-width:210px}
+  .kpi.hero{grid-column:span 2}
+  .kpi{padding:12px 14px}
+  .toast{bottom:calc(80px + env(safe-area-inset-bottom))}
+  .lightbox{padding:14px}
+  .lightbox img{max-height:70vh}
+}
+@media(max-width:420px){
+  .kpis{gap:9px}
+  .topbar h2{font-size:17px}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="side">
+    <div class="brand">
+      <div class="mark">OB</div>
+      <div>
+        <h1>Controle de Obras
+          <small>Orçado × Realizado</small>
+        </h1>
+      </div>
+    </div>
+    <nav class="nav" id="nav">
+      <button data-view="painel" aria-current="true"><svg viewBox="0 0 24 24"><path d="M3 13h6V3H3zM15 21h6V11h-6zM3 21h6v-5H3zM15 7h6V3h-6z"/></svg>Painel</button>
+      <button data-view="orcamento"><svg viewBox="0 0 24 24"><path d="M4 5h16v14H4z"/><path d="M4 10h16M10 10v9"/></svg>Orçamento</button>
+      <button data-view="gastos"><svg viewBox="0 0 24 24"><path d="M3 7h18v12H3z"/><path d="M3 11h18M7 15h4"/></svg>Lançamentos</button>
+      <button data-view="desembolso"><svg viewBox="0 0 24 24"><path d="M4 6h16v14H4z"/><path d="M4 10h16M9 3v4M15 3v4"/></svg>Desembolso</button>
+      <button data-view="obras"><svg viewBox="0 0 24 24"><path d="M4 20V9l8-5 8 5v11z"/><path d="M9 20v-6h6v6"/></svg>Obras</button>
+    </nav>
+  </aside>
+
+  <main>
+    <div class="topbar">
+      <div>
+        <h2 id="viewTitle">Painel</h2>
+        <div class="sub" id="viewSub"></div>
+      </div>
+      <div class="tools">
+        <select class="btn" id="obraSel" aria-label="Obra selecionada"></select>
+        <button class="btn" id="btnNovoOrc">+ Orçamento</button>
+        <button class="btn primary" id="btnNovoGasto">+ Lançar gasto</button>
+        <div class="menuwrap">
+          <button class="btn" id="btnMenu" aria-label="Mais opções" aria-expanded="false">⋯</button>
+          <div class="menu" id="menu">
+            <button id="btnTheme">Tema claro / escuro</button>
+            <button id="btnExport">Exportar backup</button>
+            <button id="btnImport">Importar backup</button>
+            <input type="file" id="fileImport" accept="application/json,.json" class="hidden">
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="avisoStorage" class="alert hidden" style="margin-bottom:14px"></div>
+    <div id="views"></div>
+  </main>
+</div>
+
+<div class="modal-bg" id="mConfirm"><div class="modal" style="max-width:440px">
+  <header><h3 id="cfTit">Confirmar</h3></header>
+  <div class="body"><p id="cfMsg" style="margin:0;color:var(--ink-2)"></p></div>
+  <footer><button class="btn" id="cfNao">Cancelar</button><button class="btn primary" id="cfSim">Confirmar</button></footer>
+</div></div>
+
+<div class="tip" id="tip"></div>
+<div class="toast" id="toast"></div>
+<div class="lightbox" id="lightbox">
+  <img id="lbImg" alt="Foto do lançamento">
+  <div class="lbbar">
+    <button id="lbPrev">‹ Anterior</button>
+    <span id="lbInfo"></span>
+    <button id="lbNext">Próxima ›</button>
+    <button id="lbClose">Fechar</button>
+  </div>
+</div>
+
+<!-- modal obra -->
+<div class="modal-bg" id="mObra"><div class="modal">
+  <header><h3 id="mObraTit">Nova obra</h3><button class="btn ghost sm" data-close>Fechar</button></header>
+  <div class="body">
+    <input type="hidden" id="oId">
+    <div class="field"><label>Nome da obra</label><input id="oNome" placeholder="Ex.: Reforma da cozinha"></div>
+    <div class="field"><label>Descrição / local</label><input id="oDesc" placeholder="Ex.: Casa — piso térreo"></div>
+    <div class="row3">
+      <div class="field"><label>Início</label><input type="date" id="oIni"></div>
+      <div class="field"><label>Previsão de término</label><input type="date" id="oFim"></div>
+      <div class="field"><label>Status</label><select id="oStatus">
+        <option>Planejamento</option><option>Em andamento</option><option>Pausada</option><option>Concluída</option>
+      </select></div>
+    </div>
+  </div>
+  <footer><button class="btn" data-close>Cancelar</button><button class="btn primary" id="oSalvar">Salvar obra</button></footer>
+</div></div>
+
+<!-- modal orçamento -->
+<div class="modal-bg" id="mOrc"><div class="modal">
+  <header><h3 id="mOrcTit">Item de orçamento</h3><button class="btn ghost sm" data-close>Fechar</button></header>
+  <div class="body">
+    <input type="hidden" id="bId">
+    <div class="row2">
+      <div class="field"><label>Etapa / categoria</label><select id="bCat"></select></div>
+      <div class="field"><label>Valor orçado (R$)</label><input id="bValor" inputmode="decimal" placeholder="0,00"><div class="hint">Aceita 12.500,00 ou 12500.00</div></div>
+    </div>
+    <div class="field"><label>Descrição do item</label><input id="bDesc" placeholder="Ex.: Material elétrico (fios, disjuntores, tomadas)"></div>
+    <div class="field"><label>Observação</label><input id="bObs" placeholder="Opcional — base do orçamento, fornecedor cotado…"></div>
+  </div>
+  <footer><button class="btn danger ghost" id="bExcluir">Excluir</button><button class="btn" data-close>Cancelar</button><button class="btn primary" id="bSalvar">Salvar item</button></footer>
+</div></div>
+
+<!-- modal gasto -->
+<div class="modal-bg" id="mGasto"><div class="modal">
+  <header><h3 id="mGastoTit">Lançar gasto</h3><button class="btn ghost sm" data-close>Fechar</button></header>
+  <div class="body">
+    <input type="hidden" id="gId">
+    <div class="row3">
+      <div class="field"><label>Data da compra</label><input type="date" id="gData"></div>
+      <div class="field"><label>Etapa / categoria</label><select id="gCat"></select></div>
+      <div class="field"><label>Valor total (R$)</label><input id="gValor" inputmode="decimal" placeholder="0,00"></div>
+    </div>
+    <div class="field"><label>Descrição</label><input id="gDesc" placeholder="Ex.: 12 sacos de cimento CP-II"></div>
+    <div class="row3">
+      <div class="field"><label>Fornecedor</label><input id="gForn" placeholder="Ex.: Depósito São Jorge"></div>
+      <div class="field"><label>Tipo</label><select id="gTipo">
+        <option>Material</option><option>Mão de obra</option><option>Serviço</option><option>Taxas / documentação</option><option>Equipamento / aluguel</option>
+      </select></div>
+      <div class="field"><label>Pagamento</label><select id="gPag">
+        <option>Pix</option><option>Dinheiro</option><option>Cartão de crédito</option><option>Cartão de débito</option><option>Boleto</option><option>Transferência</option>
+      </select></div>
+    </div>
+    <div class="row3">
+      <div class="field"><label>Parcelas</label><input type="number" id="gParc" min="1" max="48" step="1" value="1"></div>
+      <div class="field"><label id="gVencLab">Vencimento</label><input type="date" id="gVenc"></div>
+      <div class="field" id="fStatus"><label>Situação</label><select id="gStatus"><option>Pago</option><option>A pagar</option></select></div>
+      <div class="field hidden" id="fPagas"><label>Parcelas já pagas</label><input type="number" id="gPagas" min="0" step="1" value="0"></div>
+    </div>
+    <div class="hint" id="gParcInfo" style="margin:-6px 0 13px"></div>
+    <div class="field"><label>Nota fiscal / documento</label><input id="gNf" placeholder="Opcional"></div>
+    <div class="field">
+      <label>Fotos (nota fiscal, andamento da obra)</label>
+      <div class="drop" id="gDrop">Clique para escolher fotos ou arraste aqui — são reduzidas antes de salvar</div>
+      <input type="file" id="gFile" accept="image/*" multiple class="hidden">
+      <div class="thumbs" id="gThumbs"></div>
+    </div>
+  </div>
+  <footer><button class="btn danger ghost" id="gExcluir">Excluir</button><button class="btn" data-close>Cancelar</button><button class="btn primary" id="gSalvar">Salvar lançamento</button></footer>
+</div></div>
+
+<script>
+"use strict";
+/* ============================================================
+   Controle de Obras — app local, dados no navegador
+   ============================================================ */
+
+const CATS = ["Projeto e documentação","Demolição e remoção","Fundação e estrutura","Alvenaria","Cobertura e telhado",
+  "Instalações elétricas","Instalações hidráulicas","Esquadrias (portas/janelas)","Revestimentos e pisos",
+  "Gesso e forro","Pintura","Marcenaria e móveis","Louças e metais","Mão de obra","Limpeza e outros"];
+
+const KEY = "obras.controle.v1";
+const uid = () => Math.random().toString(36).slice(2,10);
+
+let state = load();
+let view = "painel";
+let filtro = {cat:"", tipo:"", status:"", q:""};
+
+function load(){
+  try{
+    const raw = localStorage.getItem(KEY);
+    if(raw) return migrar(JSON.parse(raw));
+  }catch(e){ console.warn("localStorage indisponível:", e.message); }
+  return { obras:[], orcamento:[], gastos:[], obraAtiva:null };
+}
+/** Compatibilidade com dados salvos antes do parcelamento e das fotos */
+function migrar(d){
+  (d.gastos||[]).forEach(g=>{
+    if(g.parcelas == null) g.parcelas = 1;
+    if(!g.venc1) g.venc1 = g.data;
+    if(g.parcelasPagas == null) g.parcelasPagas = (g.status === "Pago") ? g.parcelas : 0;
+    if(!Array.isArray(g.fotos)) g.fotos = [];
+  });
+  return d;
+}
+let avisouFalha = false;
+function save(){
+  try{
+    localStorage.setItem(KEY, JSON.stringify(state));
+    avisouFalha = false;
+  }catch(e){
+    console.warn("Não foi possível salvar:", e.message);
+    if(!avisouFalha){
+      avisouFalha = true;
+      toast("Este navegador não está guardando os dados. Exporte um backup antes de sair.", 6000);
+      mostrarAvisoStorage("falha");
+    }
+  }
+}
+
+/** localStorage e IndexedDB existem de verdade neste navegador? */
+const Suporte = {
+  local: (()=>{ try{ localStorage.setItem("__t","1"); localStorage.removeItem("__t"); return true; }catch(e){ return false; } })(),
+  idb: (()=>{ try{ return !!window.indexedDB; }catch(e){ return false; } })()
+};
+function mostrarAvisoStorage(motivo){
+  const el = document.getElementById("avisoStorage");
+  if(!el) return;
+  const txt = motivo==="falha"
+    ? `<b>O navegador recusou salvar.</b> Costuma ser falta de espaço ou navegação privada. Use <b>Exportar backup</b> agora — o que está na tela ainda não foi gravado.`
+    : `<b>Este navegador não guarda dados.</b> Você pode consultar e lançar, mas ao fechar perde tudo. No iPhone isso acontece quando o arquivo abre na pré-visualização do app Arquivos — use <b>Exportar backup</b> antes de sair.`;
+  el.innerHTML = `<span class="dot" style="background:var(--critical);width:10px;height:10px;margin-top:5px;flex:0 0 10px"></span><span>${txt}</span>`;
+  el.classList.remove("hidden");
+}
+
+/* ---------------- helpers ---------------- */
+const BRL = v => (v||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
+const N2  = v => (v||0).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2});
+const PCT = v => (v||0).toLocaleString("pt-BR",{minimumFractionDigits:1,maximumFractionDigits:1})+"%";
+function compact(v){
+  const a = Math.abs(v);
+  if(a>=1e6) return "R$ "+(v/1e6).toLocaleString("pt-BR",{maximumFractionDigits:2})+" mi";
+  if(a>=1e4) return "R$ "+(v/1e3).toLocaleString("pt-BR",{maximumFractionDigits:1})+" mil";
+  return BRL(v);
+}
+function parseNum(s){
+  if(typeof s === "number") return s;
+  if(!s) return 0;
+  s = String(s).trim().replace(/[R$\s]/g,"");
+  if(s.includes(",")) s = s.replace(/\./g,"").replace(",",".");
+  const n = parseFloat(s);
+  return isNaN(n) ? 0 : n;
+}
+const dBR = iso => iso ? iso.split("-").reverse().join("/") : "—";
+const MESES = ["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
+const mesBR = ym => { const [y,m] = ym.split("-"); return MESES[+m-1]+"/"+y.slice(2); };
+
+/** soma k meses a uma data ISO, segurando o último dia do mês (31/01 + 1 mês = 28/02) */
+function addMeses(iso, k){
+  if(!iso) return iso;
+  const [y,m,d] = iso.split("-").map(Number);
+  const dt = new Date(y, m-1+k, 1);
+  const ultimo = new Date(dt.getFullYear(), dt.getMonth()+1, 0).getDate();
+  dt.setDate(Math.min(d, ultimo));
+  return `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,"0")}-${String(dt.getDate()).padStart(2,"0")}`;
+}
+/** Explode um lançamento nas suas parcelas. A diferença de arredondamento vai na última. */
+function parcelasDe(g){
+  const n = Math.max(1, Math.round(g.parcelas||1));
+  const base = Math.floor((g.valor/n)*100)/100;
+  const pagas = Math.max(0, Math.min(n, Math.round(g.parcelasPagas||0)));
+  const out = [];
+  for(let i=0;i<n;i++){
+    out.push({
+      gasto:g, i:i+1, n,
+      venc: addMeses(g.venc1||g.data, i),
+      valor: i===n-1 ? +(g.valor - base*(n-1)).toFixed(2) : base,
+      pago: i < pagas
+    });
+  }
+  return out;
+}
+const valorPago = g => parcelasDe(g).filter(p=>p.pago).reduce((a,p)=>a+p.valor,0);
+function situacaoGasto(g){
+  const n = Math.max(1, Math.round(g.parcelas||1));
+  const pagas = Math.max(0, Math.min(n, Math.round(g.parcelasPagas||0)));
+  if(pagas>=n) return {txt: n>1 ? `Pago ${n}/${n}` : "Pago", cor:"var(--good)"};
+  if(pagas>0)  return {txt: `${pagas}/${n} pagas`, cor:"var(--warning)"};
+  return {txt:"A pagar", cor:"var(--serious)"};
+}
+const esc = s => String(s??"").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const hoje = () => new Date().toISOString().slice(0,10);
+
+function obraAtual(){
+  return state.obras.find(o=>o.id===state.obraAtiva) || state.obras[0] || null;
+}
+function orcDaObra(){ const o=obraAtual(); return o ? state.orcamento.filter(b=>b.obraId===o.id) : []; }
+function gastosDaObra(){ const o=obraAtual(); return o ? state.gastos.filter(g=>g.obraId===o.id) : []; }
+
+/** Consolidado por categoria: orçado, realizado, saldo, consumo % */
+function analitico(){
+  const map = new Map();
+  const get = c => { if(!map.has(c)) map.set(c,{cat:c,orcado:0,realizado:0,pago:0,apagar:0}); return map.get(c); };
+  orcDaObra().forEach(b => get(b.categoria).orcado += b.valor);
+  gastosDaObra().forEach(g => {
+    const r = get(g.categoria);
+    r.realizado += g.valor;                 // valor cheio na data da compra
+    const pg = valorPago(g);
+    r.pago += pg; r.apagar += g.valor - pg; // o caixa é acompanhado pelas parcelas
+  });
+  const rows = [...map.values()].map(r => ({
+    ...r,
+    saldo: r.orcado - r.realizado,
+    consumo: r.orcado > 0 ? (r.realizado / r.orcado) * 100 : (r.realizado > 0 ? Infinity : 0)
+  }));
+  rows.sort((a,b)=> b.orcado - a.orcado || b.realizado - a.realizado);
+  return rows;
+}
+function totais(){
+  const rows = analitico();
+  const t = rows.reduce((a,r)=>({
+    orcado:a.orcado+r.orcado, realizado:a.realizado+r.realizado, pago:a.pago+r.pago, apagar:a.apagar+r.apagar
+  }),{orcado:0,realizado:0,pago:0,apagar:0});
+  t.saldo = t.orcado - t.realizado;
+  t.consumo = t.orcado>0 ? t.realizado/t.orcado*100 : 0;
+  return t;
+}
+function sitConsumo(p){
+  if(p===Infinity) return {cor:"var(--critical)", txt:"Sem orçamento", ic:"!"};
+  if(p>100) return {cor:"var(--critical)", txt:"Estourou", ic:"!"};
+  if(p>=90) return {cor:"var(--warning)", txt:"No limite", ic:"~"};
+  if(p>=70) return {cor:"var(--serious)", txt:"Atenção", ic:"~"};
+  return {cor:"var(--good)", txt:"Dentro", ic:"✓"};
+}
+
+/* ---------------- tooltip ---------------- */
+const tipEl = document.getElementById("tip");
+function showTip(html, ev){
+  tipEl.innerHTML = html; tipEl.classList.add("on");
+  const r = tipEl.getBoundingClientRect();
+  let x = ev.clientX + 14, y = ev.clientY - r.height - 10;
+  if(x + r.width > innerWidth - 8) x = ev.clientX - r.width - 14;
+  if(y < 8) y = ev.clientY + 18;
+  tipEl.style.left = x+"px"; tipEl.style.top = y+"px";
+}
+function hideTip(){ tipEl.classList.remove("on"); }
+
+/* ---------------- toast ---------------- */
+let toastT;
+function toast(msg, ms=2600){
+  const el = document.getElementById("toast");
+  el.textContent = msg; el.classList.add("on");
+  clearTimeout(toastT); toastT = setTimeout(()=>el.classList.remove("on"), ms);
+}
+
+/* ============================================================
+   Fotos — guardadas em IndexedDB (localStorage não comporta imagens)
+   ============================================================ */
+const Fotos = (()=>{
+  let dbp = null;
+  function open(){
+    if(!dbp) dbp = new Promise((res,rej)=>{
+      const r = indexedDB.open("obras-fotos", 1);
+      r.onupgradeneeded = ()=> r.result.createObjectStore("fotos");
+      r.onsuccess = ()=> res(r.result);
+      r.onerror  = ()=> rej(r.error);
+    });
+    return dbp;
+  }
+  const tx = async (modo, fn)=>{
+    const db = await open();
+    return new Promise((res,rej)=>{
+      const t = db.transaction("fotos", modo), st = t.objectStore("fotos");
+      const q = fn(st);
+      t.oncomplete = ()=> res(q && q.result);
+      t.onerror = ()=> rej(t.error);
+    });
+  };
+  return {
+    set: (id,dataUrl)=> tx("readwrite", st=> st.put(dataUrl, id)),
+    get: id => tx("readonly",  st=> st.get(id)),
+    del: id => tx("readwrite", st=> st.delete(id)),
+    async many(ids){
+      const out = {};
+      for(const id of ids){ const v = await Fotos.get(id); if(v) out[id]=v; }
+      return out;
+    }
+  };
+})();
+
+/** Reduz a imagem antes de guardar — foto de celular passa de 4MB para ~200KB */
+function comprimir(file, max=1600, q=0.72){
+  return new Promise((res,rej)=>{
+    const url = URL.createObjectURL(file), img = new Image();
+    img.onload = ()=>{
+      const s = Math.min(1, max/Math.max(img.width, img.height));
+      const c = document.createElement("canvas");
+      c.width = Math.max(1, Math.round(img.width*s));
+      c.height = Math.max(1, Math.round(img.height*s));
+      c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(url);
+      res(c.toDataURL("image/jpeg", q));
+    };
+    img.onerror = ()=>{ URL.revokeObjectURL(url); rej(new Error("imagem inválida")); };
+    img.src = url;
+  });
+}
+
+/* ---------------- lightbox ---------------- */
+let lbSet = [], lbIdx = 0;
+async function abrirFotos(ids, i=0){
+  if(!ids || !ids.length) return;
+  const mapa = await Fotos.many(ids);
+  lbSet = ids.map(id=>mapa[id]).filter(Boolean);
+  if(!lbSet.length) return toast("As fotos deste lançamento não foram encontradas.");
+  lbIdx = Math.min(i, lbSet.length-1);
+  pintarLb(); $("#lightbox").classList.add("on");
+}
+function pintarLb(){
+  $("#lbImg").src = lbSet[lbIdx];
+  $("#lbInfo").textContent = `${lbIdx+1} de ${lbSet.length}`;
+  $("#lbPrev").classList.toggle("hidden", lbSet.length<2);
+  $("#lbNext").classList.toggle("hidden", lbSet.length<2);
+}
+function fecharLb(){ $("#lightbox").classList.remove("on"); $("#lbImg").src=""; lbSet=[]; }
+
+/* ============================================================
+   Gráficos (SVG, sem dependências)
+   ============================================================ */
+
+/* Os SVGs usam viewBox: encolher a largura do viewBox em telas pequenas faz
+   o texto e as barras renderizarem maiores, em vez de virarem microscópicos. */
+const ESTREITO = () => innerWidth < 760;
+const tierTela = () => ESTREITO() ? "sm" : "lg";
+
+/** caminho de barra horizontal arredondada só na ponta do dado */
+function barH(x,y,w,h,r){
+  r = Math.max(0, Math.min(r, w, h/2));
+  if(w<=0.5) return `M${x} ${y}h0.5v${h}h-0.5z`;
+  return `M${x} ${y}h${w-r}a${r} ${r} 0 0 1 ${r} ${r}v${h-2*r}a${r} ${r} 0 0 1 ${-r} ${r}h${-(w-r)}z`;
+}
+function niceTicks(max, n=4){
+  if(max<=0) return [0];
+  const raw = max/n, mag = Math.pow(10, Math.floor(Math.log10(raw)));
+  const step = [1,2,2.5,5,10].map(m=>m*mag).find(s=> s>=raw) || 10*mag;
+  const out=[]; for(let v=0; v<=max+step*.001; v+=step) out.push(v);
+  if(out[out.length-1] < max) out.push(out[out.length-1]+step);
+  return out;
+}
+function tickLabel(v){
+  if(v>=1e6) return (v/1e6).toLocaleString("pt-BR",{maximumFractionDigits:1})+"mi";
+  if(v>=1e3) return (v/1e3).toLocaleString("pt-BR",{maximumFractionDigits:0})+"k";
+  return v.toLocaleString("pt-BR");
+}
+
+/** Barras agrupadas horizontais: orçado x realizado por categoria */
+function chartOrcRea(rows){
+  if(!rows.length) return `<div class="empty">Cadastre o orçamento e os gastos para ver o comparativo.</div>`;
+  const sm = ESTREITO();
+  const data = rows.slice(0, sm?10:12);
+  const L = sm?112:186, R = sm?46:58, TOP = sm?20:26;
+  const band = sm?33:44, BAR = sm?11:15, GAP = 2;
+  const W = sm?430:860, corte = sm?15:26;
+  const H = TOP + data.length*band + (sm?22:26);
+  const plotW = W-L-R;
+  const max = Math.max(...data.map(d=>Math.max(d.orcado,d.realizado)), 1);
+  const ticks = niceTicks(max);
+  const scale = v => (v/ticks[ticks.length-1])*plotW;
+
+  let g = "";
+  ticks.forEach(t=>{
+    const x = L + scale(t);
+    g += `<line x1="${x}" y1="${TOP-8}" x2="${x}" y2="${TOP+data.length*band-10}" stroke="var(--grid)" stroke-width="1"/>
+          <text x="${x}" y="${TOP+data.length*band+6}" fill="var(--ink-muted)" font-size="10.5" text-anchor="middle">${tickLabel(t)}</text>`;
+  });
+
+  data.forEach((d,i)=>{
+    const y0 = TOP + i*band;
+    const nome = d.cat.length>corte ? d.cat.slice(0,corte-1)+"…" : d.cat;
+    const s = sitConsumo(d.consumo);
+    g += `<text x="${L-12}" y="${y0+BAR+1}" text-anchor="end" fill="var(--ink-2)" font-size="12">${esc(nome)}</text>`;
+    g += `<path d="${barH(L, y0, scale(d.orcado), BAR, 4)}" fill="var(--series-1)"
+            data-tip='${tipJSON(d)}' class="mk"/>`;
+    g += `<path d="${barH(L, y0+BAR+GAP, scale(d.realizado), BAR, 4)}" fill="var(--series-2)"
+            data-tip='${tipJSON(d)}' class="mk"/>`;
+    g += `<text x="${L+Math.max(scale(d.orcado),scale(d.realizado))+8}" y="${y0+BAR+9}"
+            fill="${s.cor}" font-size="11" font-weight="600">${d.consumo===Infinity?"s/ orç.":Math.round(d.consumo)+"%"}</text>`;
+  });
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Orçado versus realizado por etapa">${g}</svg>`;
+}
+function tipJSON(d){
+  return esc(JSON.stringify({
+    t:d.cat,
+    rows:[["Orçado",BRL(d.orcado)],["Realizado",BRL(d.realizado)],
+          [d.saldo>=0?"Saldo":"Excedente",BRL(Math.abs(d.saldo))],
+          ["Consumo", d.consumo===Infinity?"sem orçamento":PCT(d.consumo)]]
+  }));
+}
+
+/** Linha: gasto acumulado no tempo + referência do orçamento total */
+function chartAcumulado(gastos, orcTotal){
+  const ord = [...gastos].filter(g=>g.data).sort((a,b)=>a.data.localeCompare(b.data));
+  if(ord.length<1) return `<div class="empty">Lance ao menos um gasto para ver a evolução.</div>`;
+  const pts=[]; let acc=0;
+  ord.forEach(g=>{ acc+=g.valor; pts.push({d:g.data, v:acc, desc:g.descricao, val:g.valor}); });
+  // colapsa por data (último acumulado do dia)
+  const byDay = [];
+  pts.forEach(p=>{ const last=byDay[byDay.length-1]; if(last && last.d===p.d) byDay[byDay.length-1]=p; else byDay.push(p); });
+
+  const sm = ESTREITO();
+  const W = sm?400:620, H = sm?210:250, L = sm?44:58, R = sm?16:22, T=18, B=32;
+  const pw=W-L-R, ph=H-T-B;
+  const max = Math.max(acc, orcTotal||0, 1);
+  const ticks = niceTicks(max);
+  const top = ticks[ticks.length-1];
+  const t0 = new Date(byDay[0].d).getTime();
+  const t1 = new Date(byDay[byDay.length-1].d).getTime();
+  const span = Math.max(t1-t0, 1);
+  const X = d => L + ((new Date(d).getTime()-t0)/span)*pw;
+  const Y = v => T + ph - (v/top)*ph;
+
+  let g="";
+  ticks.forEach(t=>{
+    g += `<line x1="${L}" y1="${Y(t)}" x2="${W-R}" y2="${Y(t)}" stroke="var(--grid)" stroke-width="1"/>
+          <text x="${L-10}" y="${Y(t)+3.5}" text-anchor="end" fill="var(--ink-muted)" font-size="10.5">${tickLabel(t)}</text>`;
+  });
+  if(orcTotal>0){
+    g += `<line x1="${L}" y1="${Y(orcTotal)}" x2="${W-R}" y2="${Y(orcTotal)}" stroke="var(--series-1)" stroke-width="2" opacity=".55"/>
+          <text x="${W-R}" y="${Y(orcTotal)-7}" text-anchor="end" fill="var(--ink-2)" font-size="11" font-weight="600">Orçamento ${compact(orcTotal)}</text>`;
+  }
+  const dpts = byDay.length===1 ? [byDay[0],byDay[0]] : byDay;
+  const line = dpts.map((p,i)=> (i?"L":"M")+X(p.d)+" "+Y(p.v)).join(" ");
+  const area = line + ` L${X(dpts[dpts.length-1].d)} ${Y(0)} L${X(dpts[0].d)} ${Y(0)} Z`;
+  g += `<path d="${area}" fill="var(--series-2)" opacity=".10"/>`;
+  g += `<path d="${line}" fill="none" stroke="var(--series-2)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+  byDay.forEach(p=>{
+    g += `<circle cx="${X(p.d)}" cy="${Y(p.v)}" r="4.5" fill="var(--series-2)" stroke="var(--surface-1)" stroke-width="2"
+           class="mk" data-tip='${esc(JSON.stringify({t:dBR(p.d),rows:[["Acumulado",BRL(p.v)],["Último lançamento",BRL(p.val)],["Descrição",p.desc||"—"]]}))}'/>`;
+  });
+  const last = byDay[byDay.length-1];
+  g += `<text x="${X(last.d)}" y="${Y(last.v)-14}" text-anchor="end" fill="var(--ink)" font-size="12" font-weight="650">${compact(last.v)}</text>`;
+  g += `<text x="${L}" y="${H-8}" fill="var(--ink-muted)" font-size="10.5">${dBR(byDay[0].d)}</text>
+        <text x="${W-R}" y="${H-8}" text-anchor="end" fill="var(--ink-muted)" font-size="10.5">${dBR(last.d)}</text>`;
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Gasto acumulado ao longo do tempo">${g}</svg>`;
+}
+
+/** Barras simples: para onde o dinheiro está indo (por tipo de gasto) */
+function chartTipo(gastos){
+  const m = new Map();
+  gastos.forEach(g => m.set(g.tipo, (m.get(g.tipo)||0) + g.valor));
+  const data = [...m.entries()].map(([t,v])=>({t,v})).sort((a,b)=>b.v-a.v);
+  if(!data.length) return `<div class="empty">Sem lançamentos.</div>`;
+  const tot = data.reduce((a,d)=>a+d.v,0);
+  const sm = ESTREITO();
+  const W = sm?410:620, L = sm?96:138, R = sm?104:124, T=12, band = sm?30:34, BAR = sm?13:16;
+  const H = T + data.length*band + 4, pw = W-L-R;
+  const max = Math.max(...data.map(d=>d.v));
+  let g="";
+  data.forEach((d,i)=>{
+    const y = T + i*band;
+    g += `<text x="${L-12}" y="${y+BAR-3}" text-anchor="end" fill="var(--ink-2)" font-size="12">${esc(d.t)}</text>
+          <path d="${barH(L,y,(d.v/max)*pw,BAR,4)}" fill="var(--series-2)" class="mk"
+            data-tip='${esc(JSON.stringify({t:d.t,rows:[["Total",BRL(d.v)],["Participação",PCT(d.v/tot*100)]]}))}'/>
+          <text x="${L+(d.v/max)*pw+9}" y="${y+BAR-3}" fill="var(--ink-2)" font-size="11.5" font-variant-numeric="tabular-nums">${compact(d.v)} · ${Math.round(d.v/tot*100)}%</text>`;
+  });
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Gastos por tipo">${g}</svg>`;
+}
+
+/* ============================================================
+   Desembolso — quando o dinheiro sai do bolso
+   ============================================================ */
+function desembolso(){
+  const parcelas = gastosDaObra().flatMap(parcelasDe).filter(p=>p.venc);
+  const map = new Map();
+  parcelas.forEach(p=>{
+    const ym = p.venc.slice(0,7);
+    if(!map.has(ym)) map.set(ym,{ym, pago:0, previsto:0, n:0});
+    const r = map.get(ym); r.n++;
+    if(p.pago) r.pago += p.valor; else r.previsto += p.valor;
+  });
+  let meses = [...map.values()].sort((a,b)=>a.ym.localeCompare(b.ym));
+  if(meses.length){                                   // preenche os meses sem nada no meio
+    const cheio = [], [y0,m0] = meses[0].ym.split("-").map(Number);
+    const [y1,m1] = meses[meses.length-1].ym.split("-").map(Number);
+    for(let y=y0, m=m0; y<y1 || (y===y1 && m<=m1); m++){
+      if(m>12){ m=1; y++; }
+      const ym = `${y}-${String(m).padStart(2,"0")}`;
+      cheio.push(map.get(ym) || {ym, pago:0, previsto:0, n:0});
+    }
+    meses = cheio;
+  }
+  const hj = hoje();
+  const abertas = parcelas.filter(p=>!p.pago).sort((a,b)=>a.venc.localeCompare(b.venc));
+  const em30 = new Date(); em30.setDate(em30.getDate()+30);
+  const lim30 = em30.toISOString().slice(0,10);
+  return {
+    meses, parcelas, abertas,
+    atrasadas: abertas.filter(p=>p.venc < hj),
+    proximos30: abertas.filter(p=>p.venc >= hj && p.venc <= lim30),
+    totalAberto: abertas.reduce((a,p)=>a+p.valor,0)
+  };
+}
+
+/** coluna vertical com topo arredondado */
+function barV(x,y,w,h,r){
+  r = Math.max(0, Math.min(r, w/2, h));
+  if(h<=0.5) return "";
+  return `M${x} ${y+h}v${-(h-r)}a${r} ${r} 0 0 1 ${r} ${-r}h${w-2*r}a${r} ${r} 0 0 1 ${r} ${r}v${h-r}z`;
+}
+
+/** Colunas empilhadas: já desembolsado x ainda a desembolsar, mês a mês */
+function chartDesembolso(todos){
+  if(!todos.length) return `<div class="empty">Sem parcelas para projetar.</div>`;
+  const sm = ESTREITO();
+  const mesAtual = hoje().slice(0,7);
+  let meses = todos, janela = "";
+  if(sm && todos.length > 8){          // no celular mostra uma janela em volta de hoje
+    let ini = Math.max(0, todos.findIndex(m=>m.ym>=mesAtual) - 1);
+    if(ini + 8 > todos.length) ini = Math.max(0, todos.length-8);
+    meses = todos.slice(ini, ini+8);
+    janela = `<div class="hint" style="padding:0 14px 8px">Mostrando ${mesBR(meses[0].ym)} a ${mesBR(meses[meses.length-1].ym)} de ${todos.length} meses — o resumo mensal ao lado traz todos.</div>`;
+  }
+  const W = sm?460:900, H = sm?230:270, L = sm?42:58, R = sm?12:18, T=18, B = sm?36:42;
+  const pw=W-L-R, ph=H-T-B, base=T+ph;
+  const max = Math.max(...meses.map(m=>m.pago+m.previsto), 1);
+  const ticks = niceTicks(max), top = ticks[ticks.length-1];
+  const band = pw/meses.length, BW = Math.min(sm?22:24, band*0.52);
+
+  let g="";
+  ticks.forEach(t=>{
+    const y = base - (t/top)*ph;
+    g += `<line x1="${L}" y1="${y}" x2="${W-R}" y2="${y}" stroke="var(--grid)" stroke-width="1"/>
+          <text x="${L-10}" y="${y+3.5}" text-anchor="end" fill="var(--ink-muted)" font-size="10.5">${tickLabel(t)}</text>`;
+  });
+  meses.forEach((m,i)=>{
+    const cx = L + band*i + band/2, x = cx - BW/2;
+    const segs = [
+      {v:m.pago, c:"var(--series-1)", nome:"Já desembolsado"},
+      {v:m.previsto, c:"var(--series-2)", nome:"A desembolsar"}
+    ].filter(s=>s.v>0.004);
+    let cursor = base;
+    segs.forEach((s,k)=>{
+      const h = (s.v/top)*ph, gap = k>0?2:0;
+      g += `<path d="${barV(x, cursor-h, BW, Math.max(0.6,h-gap), k===segs.length-1?4:0)}" fill="${s.c}" class="mk"
+              data-tip='${esc(JSON.stringify({t:mesBR(m.ym),rows:[["Já desembolsado",BRL(m.pago)],["A desembolsar",BRL(m.previsto)],["Total do mês",BRL(m.pago+m.previsto)],["Parcelas",String(m.n)]]}))}'/>`;
+      cursor -= h;
+    });
+    const tot = m.pago+m.previsto;
+    if(tot>0) g += `<text x="${cx}" y="${base-(tot/top)*ph-8}" text-anchor="middle" fill="var(--ink-2)" font-size="10.5">${tickLabel(Math.round(tot))}</text>`;
+    g += `<text x="${cx}" y="${base+16}" text-anchor="middle" font-size="10.5"
+            fill="${m.ym===mesAtual?"var(--ink)":"var(--ink-muted)"}" font-weight="${m.ym===mesAtual?"650":"400"}">${mesBR(m.ym)}</text>`;
+  });
+  g += `<line x1="${L}" y1="${base}" x2="${W-R}" y2="${base}" stroke="var(--axis)" stroke-width="1"/>`;
+  return `${janela}<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Desembolso por mês">${g}</svg>`;
+}
+
+function vDesembolso(){
+  const d = desembolso(), t = totais();
+  const prox = d.abertas[0];
+  const maiorMes = [...d.meses].sort((a,b)=>(b.pago+b.previsto)-(a.pago+a.previsto))[0];
+
+  const alertas = d.atrasadas.length
+    ? `<div class="alerts">${alerta("critical","Parcelas vencidas",
+        `${d.atrasadas.length} parcela(s) com vencimento passado e ainda em aberto, somando ${BRL(d.atrasadas.reduce((a,p)=>a+p.valor,0))}.`)}</div>`
+    : "";
+
+  const kpis = `<div class="kpis">
+    <div class="card kpi hero"><div class="label">Ainda a desembolsar nesta obra</div>
+      <div class="value">${BRL(d.totalAberto)}</div>
+      <div class="delta">${d.abertas.length} parcela(s) em aberto de ${d.parcelas.length} no total</div>
+      <div class="meter"><i style="width:${t.realizado?Math.min(t.pago/t.realizado*100,100):0}%;background:var(--series-1)"></i></div>
+    </div>
+    <div class="card kpi"><div class="label">Próximos 30 dias</div>
+      <div class="value">${BRL(d.proximos30.reduce((a,p)=>a+p.valor,0))}</div>
+      <div class="delta">${d.proximos30.length} vencimento(s)</div></div>
+    <div class="card kpi"><div class="label">Próximo vencimento</div>
+      <div class="value">${prox?BRL(prox.valor):"—"}</div>
+      <div class="delta">${prox?`${dBR(prox.venc)} · ${esc(prox.gasto.fornecedor||prox.gasto.categoria)}`:"nada em aberto"}</div></div>
+    <div class="card kpi"><div class="label">Mês mais pesado</div>
+      <div class="value">${maiorMes?BRL(maiorMes.pago+maiorMes.previsto):"—"}</div>
+      <div class="delta">${maiorMes?mesBR(maiorMes.ym):"—"}</div></div>
+  </div>`;
+
+  return `${alertas}${kpis}
+  <div class="card" style="margin-bottom:14px">
+    <div class="card-h"><div><h3>Desembolso por mês</h3>
+      <p>Cada parcela cai no mês do seu vencimento. O painel mostra o custo da obra; aqui é quando o dinheiro sai.</p></div></div>
+    <div class="legend"><span><i style="background:var(--series-1)"></i>Já desembolsado</span><span><i style="background:var(--series-2)"></i>A desembolsar</span></div>
+    <div class="chart">${chartDesembolso(d.meses)}</div>
+  </div>
+  <div class="grid2">
+    <div class="card">
+      <div class="card-h"><div><h3>Próximos vencimentos</h3><p>Marque como paga e a parcela sai da previsão.</p></div>
+        <button class="btn sm" data-act="csvParcelas">Exportar CSV</button></div>
+      ${d.abertas.length? `<div class="tablewrap"><table class="stack">
+        <thead><tr><th>Vencimento</th><th>Lançamento</th><th>Parcela</th><th class="num">Valor</th><th></th></tr></thead>
+        <tbody>${d.abertas.slice(0,12).map(p=>`<tr>
+          <td data-l="Vencimento" class="sec" style="white-space:nowrap;color:${p.venc<hoje()?"var(--critical)":"var(--ink)"}">${dBR(p.venc)}${p.venc<hoje()?" ⚠":""}</td>
+          <td data-l="" class="pri forte">${esc(p.gasto.descricao||p.gasto.categoria)}<div style="color:var(--ink-muted);font-size:11.5px;font-weight:400">${esc(p.gasto.fornecedor||"—")} · ${esc(p.gasto.pagamento)}</div></td>
+          <td data-l="Parcela" style="white-space:nowrap">${p.n>1?`${p.i}/${p.n}`:"à vista"}</td>
+          <td class="num" data-l="Valor">${N2(p.valor)}</td>
+          <td class="num"><button class="btn ghost sm" data-act="pagarAte" data-id="${p.gasto.id}" data-i="${p.i}">Marcar paga</button></td>
+        </tr>`).join("")}</tbody>
+      </table>${d.abertas.length>12?`<div class="hint" style="padding:10px 12px">Mostrando os 12 primeiros de ${d.abertas.length} vencimentos — o CSV traz todos.</div>`:""}</div>`
+      : `<div class="empty"><h4>Nada em aberto</h4><p>Todas as parcelas lançadas já foram pagas.</p></div>`}
+    </div>
+    <div class="card">
+      <div class="card-h"><div><h3>Resumo mensal</h3><p>Fluxo de caixa da obra, mês a mês.</p></div></div>
+      ${d.meses.length? `<div class="tablewrap"><table class="stack">
+        <thead><tr><th>Mês</th><th class="num">Pago</th><th class="num">A pagar</th><th class="num">Total</th></tr></thead>
+        <tbody>${d.meses.map(m=>`<tr>
+          <td data-l="" class="pri forte"${m.ym===hoje().slice(0,7)?' style="color:var(--series-1)"':""}>${mesBR(m.ym)}</td>
+          <td class="num" data-l="Pago">${m.pago?N2(m.pago):"—"}</td>
+          <td class="num" data-l="A pagar" style="color:${m.previsto?"var(--serious)":"var(--ink-muted)"}">${m.previsto?N2(m.previsto):"—"}</td>
+          <td class="num sec" data-l="Total">${N2(m.pago+m.previsto)}</td></tr>`).join("")}</tbody>
+        <tfoot><tr><td data-l="" class="pri forte">Total</td>
+          <td class="num" data-l="Pago">${N2(d.meses.reduce((a,m)=>a+m.pago,0))}</td>
+          <td class="num" data-l="A pagar">${N2(d.meses.reduce((a,m)=>a+m.previsto,0))}</td>
+          <td class="num sec" data-l="Total">${N2(d.meses.reduce((a,m)=>a+m.pago+m.previsto,0))}</td></tr></tfoot>
+      </table></div>` : `<div class="empty">Sem lançamentos.</div>`}
+    </div>
+  </div>`;
+}
+
+/* ============================================================
+   Views
+   ============================================================ */
+function render(){
+  const el = document.getElementById("views");
+  document.querySelectorAll("#nav button").forEach(b=> b.setAttribute("aria-current", b.dataset.view===view));
+  const o = obraAtual();
+  const titles = {painel:"Painel",orcamento:"Orçamento",gastos:"Lançamentos",desembolso:"Desembolso por mês",obras:"Obras"};
+  document.getElementById("viewTitle").textContent = titles[view];
+  document.getElementById("viewSub").textContent = o ? `${o.nome}${o.descricao? " · "+o.descricao:""} · ${o.status}` : "Nenhuma obra cadastrada";
+  renderObraSel();
+
+  if(!o){ el.innerHTML = vazioGeral(); bind(el); return; }
+  el.innerHTML = view==="painel" ? vPainel() : view==="orcamento" ? vOrcamento()
+               : view==="gastos" ? vGastos() : view==="desembolso" ? vDesembolso() : vObras();
+  bind(el);
+}
+
+function vazioGeral(){
+  return `<div class="card"><div class="empty">
+    <h4>Comece cadastrando uma obra</h4>
+    <p>Uma obra guarda seu orçamento por etapa e todos os lançamentos de gasto.</p>
+    <p style="margin-top:16px">
+      <button class="btn primary" data-act="novaObra">+ Nova obra</button>
+      <button class="btn" data-act="demo">Carregar dados de exemplo</button>
+    </p>
+  </div></div>`;
+}
+
+function vPainel(){
+  const t = totais(), rows = analitico(), gs = gastosDaObra();
+  const s = sitConsumo(t.consumo);
+  const estouradas = rows.filter(r=>r.consumo>100);
+  const proximas  = rows.filter(r=>r.consumo>=90 && r.consumo<=100);
+
+  let alertas = "";
+  if(estouradas.length || proximas.length || t.apagar>0){
+    alertas = `<div class="alerts">`;
+    if(estouradas.length) alertas += alerta("critical","Estourou o orçamento",
+      `${estouradas.length} etapa(s) acima do previsto: ${estouradas.map(r=>esc(r.cat)+" ("+Math.round(r.consumo)+"%)").join(", ")}.`);
+    if(proximas.length) alertas += alerta("warning","Perto do limite",
+      `${proximas.length} etapa(s) entre 90% e 100% do orçado: ${proximas.map(r=>esc(r.cat)).join(", ")}.`);
+    if(t.apagar>0) alertas += alerta("serious","Ainda a desembolsar",
+      `${BRL(t.apagar)} já comprometido mas não pago — parcelas e contas em aberto. Veja o mês a mês em <b>Desembolso</b>.`);
+    alertas += `</div>`;
+  }
+
+  const kpis = `<div class="kpis">
+    <div class="card kpi hero">
+      <div class="label">Total gasto na obra</div>
+      <div class="value">${BRL(t.realizado)}</div>
+      <div class="delta"><span class="dot" style="background:${s.cor}"></span>${s.txt} — ${PCT(t.consumo)} do orçamento</div>
+      <div class="meter"><i style="width:${Math.min(t.consumo,100)}%;background:${s.cor}"></i></div>
+    </div>
+    <div class="card kpi"><div class="label">Orçamento inicial</div><div class="value">${BRL(t.orcado)}</div>
+      <div class="delta">${orcDaObra().length} itens em ${new Set(orcDaObra().map(b=>b.categoria)).size} etapas</div></div>
+    <div class="card kpi"><div class="label">${t.saldo>=0?"Saldo disponível":"Excedente"}</div>
+      <div class="value" style="color:${t.saldo>=0?"var(--good-text)":"var(--critical)"}">${BRL(Math.abs(t.saldo))}</div>
+      <div class="delta">${t.saldo>=0?"Ainda cabe no orçamento":"Acima do previsto"}</div></div>
+    <div class="card kpi"><div class="label">Já pago / a pagar</div><div class="value">${BRL(t.pago)}</div>
+      <div class="delta">${t.apagar>0?`<span class="dot" style="background:var(--serious)"></span>${BRL(t.apagar)} em aberto`:"Nada em aberto"}</div></div>
+    <div class="card kpi"><div class="label">Lançamentos</div><div class="value">${gs.length}</div>
+      <div class="delta">Ticket médio ${BRL(gs.length? t.realizado/gs.length : 0)}</div></div>
+  </div>`;
+
+  return `${alertas}${kpis}
+  <div class="grid2">
+    <div class="card">
+      <div class="card-h"><div><h3>Orçado × realizado por etapa</h3><p>Barra superior: previsto. Inferior: gasto. O % à direita é o consumo do orçamento da etapa.</p></div></div>
+      <div class="legend"><span><i style="background:var(--series-1)"></i>Orçado</span><span><i style="background:var(--series-2)"></i>Realizado</span></div>
+      <div class="chart">${chartOrcRea(rows)}</div>
+    </div>
+    <div class="col">
+      <div class="card">
+        <div class="card-h"><div><h3>Gasto acumulado</h3><p>Quanto já saiu do bolso ao longo da obra, contra a linha do orçamento total.</p></div></div>
+        <div class="chart">${chartAcumulado(gs, t.orcado)}</div>
+      </div>
+      <div class="card">
+        <div class="card-h"><div><h3>Para onde vai o dinheiro</h3><p>Total lançado por tipo de gasto.</p></div></div>
+        <div class="chart">${chartTipo(gs)}</div>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-h"><div><h3>Visão analítica por etapa</h3><p>Mesma informação do gráfico em números — exportável para CSV.</p></div>
+      <button class="btn sm" data-act="csvAnalitico">Exportar CSV</button></div>
+    ${tabelaAnalitica(rows, t)}
+  </div>`;
+}
+function alerta(kind,tit,txt){
+  const cor = {critical:"var(--critical)",warning:"var(--warning)",serious:"var(--serious)"}[kind];
+  return `<div class="alert"><span class="dot ic" style="background:${cor};border-radius:50%;width:10px;height:10px;margin-top:5px;flex:0 0 10px"></span>
+    <span><b>${tit}.</b> ${txt}</span></div>`;
+}
+
+function tabelaAnalitica(rows,t){
+  if(!rows.length) return `<div class="empty">Sem dados ainda.</div>`;
+  return `<div class="tablewrap"><table class="stack">
+    <thead><tr><th>Etapa</th><th class="num">Orçado</th><th class="num">Realizado</th><th class="num">Saldo</th>
+    <th class="num">Consumo</th><th>Situação</th></tr></thead>
+    <tbody>${rows.map(r=>{
+      const s = sitConsumo(r.consumo);
+      return `<tr>
+        <td data-l="" class="forte">${esc(r.cat)}</td>
+        <td class="num" data-l="Orçado">${r.orcado?N2(r.orcado):"—"}</td>
+        <td class="num" data-l="Realizado">${N2(r.realizado)}</td>
+        <td class="num" data-l="Saldo" style="color:${r.saldo<0?"var(--critical)":"var(--ink)"}">${N2(r.saldo)}</td>
+        <td class="num" data-l="Consumo">${r.consumo===Infinity?"—":PCT(r.consumo)}</td>
+        <td data-l="Situação"><span class="badge"><span class="dot" style="background:${s.cor}"></span>${s.txt}</span></td>
+      </tr>`;}).join("")}</tbody>
+    <tfoot><tr><td data-l="" class="forte">Total</td><td class="num" data-l="Orçado">${N2(t.orcado)}</td>
+      <td class="num" data-l="Realizado">${N2(t.realizado)}</td>
+      <td class="num" data-l="Saldo" style="color:${t.saldo<0?"var(--critical)":"var(--ink)"}">${N2(t.saldo)}</td>
+      <td class="num" data-l="Consumo">${PCT(t.consumo)}</td><td class="hide-sm"></td></tr></tfoot>
+  </table></div>`;
+}
+
+function vOrcamento(){
+  const itens = orcDaObra();
+  const tot = itens.reduce((a,b)=>a+b.valor,0);
+  const gastoPorCat = {};
+  gastosDaObra().forEach(g=> gastoPorCat[g.categoria]=(gastoPorCat[g.categoria]||0)+g.valor);
+  return `<div class="card">
+    <div class="card-h"><div><h3>Orçamento inicial</h3><p>Itens previstos antes do início da obra. Total ${BRL(tot)}.</p></div>
+      <button class="btn primary sm" data-act="novoOrc">+ Item</button></div>
+    ${itens.length? `<div class="tablewrap"><table class="stack">
+      <thead><tr><th>Etapa</th><th>Descrição</th><th>Observação</th><th class="num">Orçado</th><th class="num">Gasto na etapa</th><th></th></tr></thead>
+      <tbody>${itens.map(b=>`<tr>
+        <td data-l=""><span class="tag">${esc(b.categoria)}</span></td>
+        <td data-l="Descrição" class="forte">${esc(b.descricao||"—")}</td>
+        <td data-l="Observação" style="color:var(--ink-muted)">${esc(b.obs||"—")}</td>
+        <td class="num" data-l="Orçado">${N2(b.valor)}</td>
+        <td class="num" data-l="Gasto na etapa" style="color:var(--ink-muted)">${N2(gastoPorCat[b.categoria]||0)}</td>
+        <td class="num"><button class="btn ghost sm" data-act="editOrc" data-id="${b.id}">Editar</button></td>
+      </tr>`).join("")}</tbody>
+      <tfoot><tr><td colspan="3" data-l="" class="forte">Total orçado</td><td class="num" data-l="Orçado">${N2(tot)}</td><td colspan="2"></td></tr></tfoot>
+    </table></div>` : `<div class="empty"><h4>Nenhum item de orçamento</h4><p>Comece lançando quanto você previu gastar em cada etapa.</p></div>`}
+  </div>`;
+}
+
+function vGastos(){
+  let gs = gastosDaObra();
+  if(filtro.cat) gs = gs.filter(g=>g.categoria===filtro.cat);
+  if(filtro.tipo) gs = gs.filter(g=>g.tipo===filtro.tipo);
+  if(filtro.status) gs = gs.filter(g=>g.status===filtro.status);
+  if(filtro.q){
+    const q = filtro.q.toLowerCase();
+    gs = gs.filter(g=> (g.descricao||"").toLowerCase().includes(q) || (g.fornecedor||"").toLowerCase().includes(q));
+  }
+  gs.sort((a,b)=> (b.data||"").localeCompare(a.data||""));
+  const tot = gs.reduce((a,g)=>a+g.valor,0);
+  const cats = [...new Set(gastosDaObra().map(g=>g.categoria))].sort();
+  const tipos = [...new Set(gastosDaObra().map(g=>g.tipo))].sort();
+
+  return `<div class="filters">
+    <select class="btn" data-f="cat"><option value="">Todas as etapas</option>${cats.map(c=>`<option ${filtro.cat===c?"selected":""}>${esc(c)}</option>`).join("")}</select>
+    <select class="btn" data-f="tipo"><option value="">Todos os tipos</option>${tipos.map(c=>`<option ${filtro.tipo===c?"selected":""}>${esc(c)}</option>`).join("")}</select>
+    <select class="btn" data-f="status"><option value="">Pago e a pagar</option><option ${filtro.status==="Pago"?"selected":""}>Pago</option><option ${filtro.status==="A pagar"?"selected":""}>A pagar</option></select>
+    <input class="btn" data-f="q" placeholder="Buscar descrição ou fornecedor" value="${esc(filtro.q)}" style="min-width:268px">
+    <button class="btn sm" data-act="csvGastos">Exportar CSV</button>
+    <span style="margin-left:auto;color:var(--ink-2)">${gs.length} lançamento(s) · <b>${BRL(tot)}</b></span>
+  </div>
+  <div class="card">
+    ${gs.length? `<div class="tablewrap"><table class="stack">
+      <thead><tr><th>Data</th><th>Etapa</th><th>Descrição</th><th>Fornecedor</th><th>Tipo</th><th>Pgto</th><th>Situação</th><th class="num">Valor</th><th></th></tr></thead>
+      <tbody>${gs.map(g=>{
+        const s = situacaoGasto(g), n = Math.max(1,g.parcelas||1), ps = parcelasDe(g);
+        return `<tr>
+        <td data-l="Data" style="white-space:nowrap">${dBR(g.data)}</td>
+        <td data-l="Etapa"><span class="tag">${esc(g.categoria)}</span></td>
+        <td data-l="" class="pri forte">${esc(g.descricao||g.categoria)}
+          ${n>1?`<div style="color:var(--ink-muted);font-size:11.5px;font-weight:400">${n}x de ${BRL(ps[0].valor)} · 1º venc. ${dBR(ps[0].venc)}</div>`:""}
+          ${g.nf?`<div style="color:var(--ink-muted);font-size:11.5px;font-weight:400">NF ${esc(g.nf)}</div>`:""}
+          ${g.fotos&&g.fotos.length?`<button class="fotobadge" data-act="verFotos" data-id="${g.id}">🖼 ${g.fotos.length} foto${g.fotos.length>1?"s":""}</button>`:""}
+        </td>
+        <td data-l="Fornecedor">${esc(g.fornecedor||"—")}</td>
+        <td data-l="Tipo" style="color:var(--ink-2)">${esc(g.tipo)}</td>
+        <td data-l="Pagamento" style="color:var(--ink-2)">${esc(g.pagamento)}${n>1?` <span class="tag">${n}x</span>`:""}</td>
+        <td data-l="Situação"><span class="badge"><span class="dot" style="background:${s.cor}"></span>${esc(s.txt)}</span></td>
+        <td class="num sec" data-l="Valor">${N2(g.valor)}</td>
+        <td class="num"><button class="btn ghost sm" data-act="editGasto" data-id="${g.id}">Editar</button></td>
+      </tr>`;}).join("")}</tbody>
+      <tfoot><tr><td colspan="7" data-l="" class="pri forte">Total filtrado</td><td class="num sec" data-l="Valor">${N2(tot)}</td><td></td></tr></tfoot>
+    </table></div>`: `<div class="empty"><h4>Nenhum lançamento</h4><p>Clique em “Lançar gasto” para registrar a primeira compra ou diária.</p></div>`}
+  </div>`;
+}
+
+function vObras(){
+  return `<div class="card">
+    <div class="card-h"><div><h3>Obras cadastradas</h3><p>Cada obra tem seu próprio orçamento e lançamentos.</p></div>
+      <button class="btn primary sm" data-act="novaObra">+ Nova obra</button></div>
+    <div class="tablewrap"><table class="stack">
+      <thead><tr><th>Obra</th><th>Descrição</th><th>Início</th><th>Previsão</th><th>Status</th><th class="num">Orçado</th><th class="num">Gasto</th><th class="num">Consumo</th><th></th></tr></thead>
+      <tbody>${state.obras.map(o=>{
+        const orc = state.orcamento.filter(b=>b.obraId===o.id).reduce((a,b)=>a+b.valor,0);
+        const rea = state.gastos.filter(g=>g.obraId===o.id).reduce((a,g)=>a+g.valor,0);
+        const p = orc>0? rea/orc*100 : (rea>0?Infinity:0);
+        const s = sitConsumo(p);
+        return `<tr>
+          <td data-l="" class="pri forte">${esc(o.nome)}${o.id===state.obraAtiva?' <span class="tag">ativa</span>':""}</td>
+          <td data-l="Descrição" style="color:var(--ink-2)">${esc(o.descricao||"—")}</td>
+          <td data-l="Início">${dBR(o.inicio)}</td><td data-l="Previsão">${dBR(o.previsao)}</td>
+          <td data-l="Status"><span class="tag">${esc(o.status)}</span></td>
+          <td class="num" data-l="Orçado">${N2(orc)}</td><td class="num" data-l="Gasto">${N2(rea)}</td>
+          <td class="num sec" data-l="Consumo" style="color:${s.cor};font-weight:600">${p===Infinity?"—":Math.round(p)+"%"}</td>
+          <td class="num" style="white-space:nowrap">
+            <button class="btn ghost sm" data-act="abrirObra" data-id="${o.id}">Abrir</button>
+            <button class="btn ghost sm" data-act="editObra" data-id="${o.id}">Editar</button>
+          </td></tr>`;}).join("")}</tbody>
+    </table></div>
+  </div>`;
+}
+
+function renderObraSel(){
+  const sel = document.getElementById("obraSel");
+  sel.innerHTML = state.obras.map(o=>`<option value="${o.id}" ${o.id===state.obraAtiva?"selected":""}>${esc(o.nome)}</option>`).join("")
+    || `<option>— sem obras —</option>`;
+}
+
+/* ============================================================
+   Eventos
+   ============================================================ */
+function bind(root){
+  root.querySelectorAll("[data-act]").forEach(b=> b.onclick = ()=>
+    b.dataset.i!==undefined ? act2(b.dataset.act, b.dataset.id, b.dataset.i) : act(b.dataset.act, b.dataset.id));
+  root.querySelectorAll("[data-f]").forEach(f=>{
+    const k=f.dataset.f;
+    if(f.tagName==="SELECT") f.onchange = ()=>{ filtro[k]=f.value; render(); };
+    else f.oninput = debounce(()=>{ filtro[k]=f.value; render(); const n=document.querySelector('[data-f="q"]'); if(n){n.focus();n.selectionStart=n.value.length;} },300);
+  });
+  root.querySelectorAll(".mk").forEach(m=>{
+    m.style.cursor="pointer";
+    const mostra = ev=>{
+      const d = JSON.parse(m.dataset.tip);
+      showTip(`<b>${esc(d.t)}</b>${d.rows.map(r=>`<div class="row"><span>${esc(r[0])}</span><b>${esc(r[1])}</b></div>`).join("")}`, ev);
+    };
+    m.addEventListener("pointermove", ev=>{ if(ev.pointerType==="mouse") mostra(ev); });
+    m.addEventListener("pointerdown", ev=>{ if(ev.pointerType!=="mouse"){ ev.stopPropagation(); mostra(ev); } });
+    m.addEventListener("pointerleave", hideTip);
+  });
+}
+function debounce(fn,ms){ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a),ms); }; }
+
+function act(a,id){
+  if(a==="novaObra") openObra();
+  if(a==="editObra") openObra(id);
+  if(a==="abrirObra"){ state.obraAtiva=id; save(); view="painel"; render(); }
+  if(a==="novoOrc") openOrc();
+  if(a==="editOrc") openOrc(id);
+  if(a==="editGasto") openGasto(id);
+  if(a==="demo"){ seedDemo(); render(); }
+  if(a==="csvAnalitico") csvAnalitico();
+  if(a==="csvGastos") csvGastos();
+  if(a==="csvParcelas") csvParcelas();
+  if(a==="verFotos"){ const g = state.gastos.find(x=>x.id===id); if(g) abrirFotos(g.fotos); }
+}
+function act2(a, id, i){
+  if(a==="pagarAte"){
+    const g = state.gastos.find(x=>x.id===id); if(!g) return;
+    g.parcelasPagas = Math.max(g.parcelasPagas||0, +i);
+    if(g.parcelasPagas >= (g.parcelas||1)) g.status = "Pago";
+    save(); render();
+    toast(`Parcela ${i} marcada como paga.`);
+  }
+}
+
+/* ---------------- modais ---------------- */
+const $ = s => document.querySelector(s);
+function openModal(sel){ $(sel).classList.add("on"); }
+function closeAll(){ document.querySelectorAll(".modal-bg").forEach(m=>m.classList.remove("on")); }
+document.querySelectorAll(".modal-bg").forEach(m=>{
+  m.addEventListener("click", e=>{ if(e.target===m) closeAll(); });
+  m.querySelectorAll("[data-close]").forEach(b=> b.onclick = closeAll);
+});
+/** confirmação sem usar o alert do navegador (que trava a página em alguns webviews) */
+function confirmar(msg, titulo="Confirmar", rotulo="Confirmar"){
+  return new Promise(res=>{
+    $("#cfTit").textContent = titulo;
+    $("#cfMsg").innerHTML = msg;
+    $("#cfSim").textContent = rotulo;
+    $("#mConfirm").classList.add("on");
+    const fim = v =>{ $("#mConfirm").classList.remove("on"); $("#cfSim").onclick=null; $("#cfNao").onclick=null; res(v); };
+    $("#cfSim").onclick = ()=> fim(true);
+    $("#cfNao").onclick = ()=> fim(false);
+  });
+}
+
+$("#lbClose").onclick = fecharLb;
+$("#lbPrev").onclick = ()=>{ lbIdx = (lbIdx-1+lbSet.length)%lbSet.length; pintarLb(); };
+$("#lbNext").onclick = ()=>{ lbIdx = (lbIdx+1)%lbSet.length; pintarLb(); };
+$("#lightbox").addEventListener("click", e=>{ if(e.target.id==="lightbox") fecharLb(); });
+document.addEventListener("keydown", e=>{
+  const lbAberto = $("#lightbox").classList.contains("on");
+  if(e.key==="Escape"){ lbAberto ? fecharLb() : closeAll(); }
+  if(lbAberto && lbSet.length>1){
+    if(e.key==="ArrowLeft"){ lbIdx=(lbIdx-1+lbSet.length)%lbSet.length; pintarLb(); }
+    if(e.key==="ArrowRight"){ lbIdx=(lbIdx+1)%lbSet.length; pintarLb(); }
+  }
+});
+
+function fillCats(sel, extra){
+  const all = [...new Set([...CATS, ...state.orcamento.map(b=>b.categoria), ...state.gastos.map(g=>g.categoria)])];
+  sel.innerHTML = all.map(c=>`<option ${c===extra?"selected":""}>${esc(c)}</option>`).join("");
+}
+
+function openObra(id){
+  const o = state.obras.find(x=>x.id===id);
+  $("#mObraTit").textContent = o? "Editar obra":"Nova obra";
+  $("#oId").value = o?o.id:"";
+  $("#oNome").value = o?o.nome:"";
+  $("#oDesc").value = o?o.descricao||"":"";
+  $("#oIni").value = o?o.inicio||"":hoje();
+  $("#oFim").value = o?o.previsao||"":"";
+  $("#oStatus").value = o?o.status:"Em andamento";
+  openModal("#mObra");
+}
+$("#oSalvar").onclick = ()=>{
+  const nome = $("#oNome").value.trim();
+  if(!nome) return $("#oNome").focus();
+  const id = $("#oId").value;
+  const data = {nome, descricao:$("#oDesc").value.trim(), inicio:$("#oIni").value, previsao:$("#oFim").value, status:$("#oStatus").value};
+  if(id) Object.assign(state.obras.find(o=>o.id===id), data);
+  else { const n={id:uid(),...data}; state.obras.push(n); state.obraAtiva=n.id; }
+  save(); closeAll(); render();
+};
+
+function openOrc(id){
+  const o = obraAtual(); if(!o) return;
+  const b = state.orcamento.find(x=>x.id===id);
+  $("#mOrcTit").textContent = b? "Editar item do orçamento":"Novo item de orçamento";
+  $("#bId").value = b?b.id:"";
+  fillCats($("#bCat"), b?b.categoria:null);
+  $("#bValor").value = b? N2(b.valor):"";
+  $("#bDesc").value = b?b.descricao||"":"";
+  $("#bObs").value = b?b.obs||"":"";
+  $("#bExcluir").classList.toggle("hidden", !b);
+  openModal("#mOrc");
+}
+$("#bSalvar").onclick = ()=>{
+  const o = obraAtual(); if(!o) return;
+  const id = $("#bId").value;
+  const data = {obraId:o.id, categoria:$("#bCat").value, valor:parseNum($("#bValor").value),
+                descricao:$("#bDesc").value.trim(), obs:$("#bObs").value.trim()};
+  if(id) Object.assign(state.orcamento.find(b=>b.id===id), data);
+  else state.orcamento.push({id:uid(),...data});
+  save(); closeAll(); render();
+};
+$("#bExcluir").onclick = ()=>{
+  const id=$("#bId").value; state.orcamento = state.orcamento.filter(b=>b.id!==id);
+  save(); closeAll(); render();
+};
+
+let fotosAtuais = [];   // [{id, url}] enquanto o modal está aberto
+let fotosOriginais = [];
+
+function openGasto(id){
+  const o = obraAtual(); if(!o) return;
+  const g = state.gastos.find(x=>x.id===id);
+  $("#mGastoTit").textContent = g? "Editar lançamento":"Lançar gasto";
+  $("#gId").value = g?g.id:"";
+  fillCats($("#gCat"), g?g.categoria:null);
+  $("#gData").value = g?g.data:hoje();
+  $("#gValor").value = g? N2(g.valor):"";
+  $("#gDesc").value = g?g.descricao||"":"";
+  $("#gForn").value = g?g.fornecedor||"":"";
+  $("#gTipo").value = g?g.tipo:"Material";
+  $("#gPag").value = g?g.pagamento:"Pix";
+  $("#gParc").value = g?(g.parcelas||1):1;
+  $("#gVenc").value = g?(g.venc1||g.data):hoje();
+  $("#gPagas").value = g?(g.parcelasPagas||0):0;
+  $("#gStatus").value = g? ((g.parcelasPagas||0)>0?"Pago":"A pagar") : "Pago";
+  $("#gNf").value = g?g.nf||"":"";
+  $("#gExcluir").classList.toggle("hidden", !g);
+  fotosOriginais = g? [...(g.fotos||[])] : [];
+  fotosAtuais = [];
+  pintarThumbs();
+  if(fotosOriginais.length){
+    Fotos.many(fotosOriginais).then(m=>{
+      fotosAtuais = fotosOriginais.filter(i=>m[i]).map(i=>({id:i, url:m[i]}));
+      pintarThumbs();
+    }).catch(()=>{});
+  }
+  syncParcelas();
+  openModal("#mGasto");
+}
+
+/** mostra "6x de R$ 1.500,00 — de 03/09 a 03/02" e troca situação por parcelas pagas */
+function syncParcelas(){
+  const n = Math.max(1, Math.round(parseNum($("#gParc").value)||1));
+  const v = parseNum($("#gValor").value);
+  const d1 = $("#gVenc").value;
+  $("#gVencLab").textContent = n>1 ? "1º vencimento" : "Vencimento";
+  $("#fStatus").classList.toggle("hidden", n>1);
+  $("#fPagas").classList.toggle("hidden", n<=1);
+  $("#gPagas").max = n;
+  if(+$("#gPagas").value > n) $("#gPagas").value = n;
+  const info = $("#gParcInfo");
+  if(n>1 && v>0 && d1){
+    const base = Math.floor((v/n)*100)/100, ult = +(v - base*(n-1)).toFixed(2);
+    info.textContent = `${n}x de ${BRL(base)}${ult!==base?` (última de ${BRL(ult)})`:""} — de ${dBR(d1)} a ${dBR(addMeses(d1,n-1))}.`
+      + ` O valor cheio de ${BRL(v)} entra na etapa na data da compra.`;
+  } else if(n>1){
+    info.textContent = "Preencha valor e vencimento para ver as parcelas.";
+  } else info.textContent = "";
+}
+["#gParc","#gValor","#gVenc"].forEach(s=> $(s).addEventListener("input", syncParcelas));
+$("#gData").addEventListener("change", ()=>{
+  // vencimento acompanha a data da compra enquanto não for mexido à mão
+  if(!$("#gVenc").dataset.tocado) $("#gVenc").value = $("#gData").value;
+  syncParcelas();
+});
+$("#gVenc").addEventListener("change", ()=> $("#gVenc").dataset.tocado = "1");
+
+/* --- fotos no modal --- */
+function pintarThumbs(){
+  $("#gThumbs").innerHTML = fotosAtuais.map((f,i)=>
+    `<div class="thumb"><img src="${f.url}" alt="Foto ${i+1}" data-i="${i}"><button data-rm="${i}" title="Remover">×</button></div>`).join("");
+  $("#gThumbs").querySelectorAll("img").forEach(im=>
+    im.onclick = ()=> { lbSet = fotosAtuais.map(f=>f.url); lbIdx = +im.dataset.i; pintarLb(); $("#lightbox").classList.add("on"); });
+  $("#gThumbs").querySelectorAll("button[data-rm]").forEach(b=>
+    b.onclick = ()=> { fotosAtuais.splice(+b.dataset.rm,1); pintarThumbs(); });
+}
+if(!Suporte.idb){                       // sem IndexedDB não há onde guardar as fotos
+  $("#gDrop").textContent = "Fotos indisponíveis neste navegador — abra o arquivo em um navegador completo (Safari, Chrome) para anexar imagens.";
+  $("#gDrop").style.cursor = "default";
+  $("#gDrop").style.borderStyle = "solid";
+}
+$("#gDrop").onclick = ()=> Suporte.idb && $("#gFile").click();
+$("#gDrop").addEventListener("dragover", e=>{ e.preventDefault(); });
+$("#gDrop").addEventListener("drop", e=>{ e.preventDefault(); addFotos(e.dataTransfer.files); });
+$("#gFile").onchange = e=>{ addFotos(e.target.files); e.target.value=""; };
+async function addFotos(files){
+  const lista = [...files].filter(f=>f.type.startsWith("image/"));
+  if(!lista.length) return;
+  toast(`Reduzindo ${lista.length} foto(s)…`, 1500);
+  for(const f of lista){
+    try{ fotosAtuais.push({id:uid()+uid(), url: await comprimir(f)}); }
+    catch(err){ console.warn("foto ignorada:", f.name, err.message); }
+  }
+  pintarThumbs();
+}
+
+$("#gSalvar").onclick = async ()=>{
+  const o = obraAtual(); if(!o) return;
+  const v = parseNum($("#gValor").value);
+  if(!v) return $("#gValor").focus();
+  const n = Math.max(1, Math.round(parseNum($("#gParc").value)||1));
+  const pagas = n>1 ? Math.max(0, Math.min(n, Math.round(parseNum($("#gPagas").value)||0)))
+                    : ($("#gStatus").value==="Pago" ? 1 : 0);
+  const id = $("#gId").value;
+
+  // grava as fotos novas e apaga as que saíram
+  const ids = fotosAtuais.map(f=>f.id);
+  try{
+    for(const f of fotosAtuais) if(!fotosOriginais.includes(f.id)) await Fotos.set(f.id, f.url);
+    for(const antigo of fotosOriginais) if(!ids.includes(antigo)) await Fotos.del(antigo);
+  }catch(e){ toast("Não consegui salvar as fotos: "+e.message, 4000); }
+
+  const data = {obraId:o.id, data:$("#gData").value, categoria:$("#gCat").value, valor:v,
+    descricao:$("#gDesc").value.trim(), fornecedor:$("#gForn").value.trim(),
+    tipo:$("#gTipo").value, pagamento:$("#gPag").value, nf:$("#gNf").value.trim(),
+    parcelas:n, venc1:$("#gVenc").value || $("#gData").value, parcelasPagas:pagas,
+    status: pagas>=n ? "Pago" : "A pagar", fotos: ids};
+  if(id) Object.assign(state.gastos.find(g=>g.id===id), data);
+  else state.gastos.push({id:uid(),...data});
+  save(); closeAll(); render();
+};
+$("#gExcluir").onclick = async ()=>{
+  const id = $("#gId").value, g = state.gastos.find(x=>x.id===id);
+  if(g) for(const f of (g.fotos||[])) { try{ await Fotos.del(f); }catch(e){} }
+  state.gastos = state.gastos.filter(x=>x.id!==id);
+  save(); closeAll(); render();
+};
+
+/* ---------------- topo ---------------- */
+document.getElementById("nav").onclick = e=>{
+  const b = e.target.closest("button[data-view]"); if(!b) return;
+  view = b.dataset.view; filtro={cat:"",tipo:"",status:"",q:""};
+  render();
+  scrollTo({top:0, behavior:"instant"});   // trocar de aba começa do topo, não no meio da página
+};
+$("#obraSel").onchange = e=>{ state.obraAtiva = e.target.value; save(); render(); };
+$("#btnNovoGasto").onclick = ()=> obraAtual()? openGasto() : openObra();
+$("#btnNovoOrc").onclick = ()=> obraAtual()? openOrc() : openObra();
+/* menu do topo */
+$("#btnMenu").onclick = e=>{
+  e.stopPropagation();
+  const m = $("#menu"), abrindo = !m.classList.contains("on");
+  m.classList.toggle("on", abrindo);
+  $("#btnMenu").setAttribute("aria-expanded", String(abrindo));
+};
+document.addEventListener("click", ()=>{
+  $("#menu").classList.remove("on");
+  $("#btnMenu").setAttribute("aria-expanded","false");
+  hideTip();
+});
+$("#menu").addEventListener("click", e=> e.stopPropagation());
+
+$("#btnTheme").onclick = ()=>{
+  const cur = document.documentElement.getAttribute("data-theme");
+  const next = cur==="dark"?"light":"dark";
+  document.documentElement.setAttribute("data-theme", next);
+  try{ localStorage.setItem(KEY+".theme", next); }catch(e){}
+  render();
+};
+try{
+  const th = localStorage.getItem(KEY+".theme");
+  if(th) document.documentElement.setAttribute("data-theme", th);
+  else if(matchMedia("(prefers-color-scheme: dark)").matches) document.documentElement.setAttribute("data-theme","dark");
+}catch(e){}
+
+/* ---------------- export / import ---------------- */
+function baixar(nome, conteudo, tipo){
+  const blob = new Blob([conteudo], {type:tipo});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob); a.download = nome; a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href), 2000);
+}
+$("#btnExport").onclick = async ()=>{
+  toast("Montando o backup…", 1500);
+  const ids = state.gastos.flatMap(g=>g.fotos||[]);
+  let fotos = {};
+  try{ fotos = await Fotos.many(ids); }catch(e){ console.warn("fotos fora do backup:", e.message); }
+  const pacote = {...state, fotos, versao:2, exportadoEm:new Date().toISOString()};
+  const txt = JSON.stringify(pacote, null, 2);
+  baixar(`obras-backup-${hoje()}.json`, txt, "application/json");
+  const mb = txt.length/1048576;
+  toast(`Backup gerado: ${mb.toFixed(1)} MB, ${Object.keys(fotos).length} foto(s).`, 3500);
+};
+$("#btnImport").onclick = ()=> $("#fileImport").click();
+$("#fileImport").onchange = e=>{
+  const f = e.target.files[0]; if(!f) return;
+  const r = new FileReader();
+  r.onload = async ()=>{
+    try{
+      const d = JSON.parse(r.result);
+      if(!d.obras) throw new Error("formato inválido");
+      const atual = state.gastos.length + state.orcamento.length;
+      if(atual > 0){
+        const ok = await confirmar(
+          `Este aparelho já tem <b>${state.obras.length} obra(s)</b> e <b>${state.gastos.length} lançamento(s)</b>.<br><br>`
+          + `Importar vai <b>substituir tudo</b> pelo conteúdo do arquivo (${(d.obras||[]).length} obra(s), ${(d.gastos||[]).length} lançamento(s)`
+          + `${d.exportadoEm?`, exportado em ${dBR(d.exportadoEm.slice(0,10))}`:""}). Não dá para desfazer.`,
+          "Substituir os dados deste aparelho?", "Substituir");
+        if(!ok) return toast("Importação cancelada — nada foi alterado.");
+      }
+      if(d.fotos) for(const [id,url] of Object.entries(d.fotos)){ try{ await Fotos.set(id,url); }catch(err){} }
+      state = migrar({obras:d.obras||[], orcamento:d.orcamento||[], gastos:d.gastos||[],
+                      obraAtiva:d.obraAtiva||(d.obras[0]&&d.obras[0].id)});
+      save(); render();
+      toast(`Backup restaurado: ${state.obras.length} obra(s), ${state.gastos.length} lançamento(s).`, 3500);
+    }catch(err){ toast("Não consegui ler este arquivo: "+err.message, 4000); }
+  };
+  r.readAsText(f); e.target.value="";
+};
+function csv(rows){ return "﻿"+rows.map(r=>r.map(c=>`"${String(c??"").replace(/"/g,'""')}"`).join(";")).join("\n"); }
+function csvAnalitico(){
+  const t = totais();
+  const rows = [["Etapa","Orcado","Realizado","Saldo","Consumo %"]]
+    .concat(analitico().map(r=>[r.cat,N2(r.orcado),N2(r.realizado),N2(r.saldo),r.consumo===Infinity?"":N2(r.consumo)]))
+    .concat([["TOTAL",N2(t.orcado),N2(t.realizado),N2(t.saldo),N2(t.consumo)]]);
+  baixar(`analitico-${(obraAtual()||{}).nome||"obra"}.csv`, csv(rows), "text/csv");
+}
+function csvGastos(){
+  const rows = [["Data","Etapa","Descricao","Fornecedor","Tipo","Pagamento","Parcelas","1o vencimento","Parcelas pagas","Situacao","NF","Fotos","Valor"]]
+    .concat(gastosDaObra().sort((a,b)=>(a.data||"").localeCompare(b.data||""))
+      .map(g=>[dBR(g.data),g.categoria,g.descricao,g.fornecedor,g.tipo,g.pagamento,
+               g.parcelas||1,dBR(g.venc1||g.data),g.parcelasPagas||0,situacaoGasto(g).txt,g.nf,
+               (g.fotos||[]).length, N2(g.valor)]));
+  baixar(`lancamentos-${(obraAtual()||{}).nome||"obra"}.csv`, csv(rows), "text/csv");
+}
+function csvParcelas(){
+  const rows = [["Vencimento","Mes","Etapa","Descricao","Fornecedor","Parcela","De","Situacao","Valor"]]
+    .concat(gastosDaObra().flatMap(parcelasDe).sort((a,b)=>a.venc.localeCompare(b.venc))
+      .map(p=>[dBR(p.venc), mesBR(p.venc.slice(0,7)), p.gasto.categoria, p.gasto.descricao, p.gasto.fornecedor,
+               p.i, p.n, p.pago?"Pago":(p.venc<hoje()?"Vencida":"A pagar"), N2(p.valor)]));
+  baixar(`desembolso-${(obraAtual()||{}).nome||"obra"}.csv`, csv(rows), "text/csv");
+}
+
+/* ---------------- dados de exemplo ---------------- */
+function seedDemo(){
+  const id = uid();
+  state.obras.push({id, nome:"Reforma da cozinha e área de serviço", descricao:"Casa — térreo",
+    inicio:"2026-06-15", previsao:"2026-10-30", status:"Em andamento"});
+  state.obraAtiva = id;
+  const orc = [
+    ["Projeto e documentação","Projeto executivo + ART",3200,""],
+    ["Demolição e remoção","Demolição de bancada e retirada de entulho",2800,"2 caçambas"],
+    ["Alvenaria","Fechamento de vão e contrapiso",6500,""],
+    ["Instalações hidráulicas","Ponto novo de água e esgoto",4200,"Cotação Hidro Center"],
+    ["Instalações elétricas","Quadro, 12 pontos novos e cabeamento",5800,""],
+    ["Revestimentos e pisos","Porcelanato 42m² + rejunte + argamassa",11500,"Portobello 90x90"],
+    ["Gesso e forro","Forro de gesso com sanca",4800,""],
+    ["Esquadrias (portas/janelas)","Janela maxim-ar e porta de correr",7200,""],
+    ["Marcenaria e móveis","Armários planejados sob medida",22000,"3 orçamentos"],
+    ["Louças e metais","Cuba, torneira, coifa e cooktop",6800,""],
+    ["Pintura","Massa + 2 demãos, teto e paredes",4500,""],
+    ["Mão de obra","Pedreiro + ajudante (12 semanas)",26000,"Diária R$ 320 + ajudante"],
+    ["Limpeza e outros","Limpeza pós-obra e imprevistos",2500,""]
+  ];
+  orc.forEach(([c,d,v,o])=> state.orcamento.push({id:uid(),obraId:id,categoria:c,descricao:d,valor:v,obs:o}));
+  const gs = [
+    ["2026-06-16","Projeto e documentação","Projeto executivo — 1ª parcela","Arq. Marina Alves","Serviço","Pix","Pago",1800,""],
+    ["2026-06-20","Demolição e remoção","Caçamba de entulho (2un)","Limpa Já Caçambas","Serviço","Pix","Pago",760,""],
+    ["2026-06-22","Demolição e remoção","Demolição bancada e revestimento","Equipe Sr. Nilton","Mão de obra","Dinheiro","Pago",1400,""],
+    ["2026-06-28","Mão de obra","Diárias pedreiro + ajudante — semana 1","Equipe Sr. Nilton","Mão de obra","Pix","Pago",2400,""],
+    ["2026-07-02","Alvenaria","Cimento, areia, blocos e argamassa","Depósito São Jorge","Material","Boleto","Pago",3180,"12455"],
+    ["2026-07-05","Mão de obra","Diárias — semana 2","Equipe Sr. Nilton","Mão de obra","Pix","Pago",2400,""],
+    ["2026-07-08","Instalações hidráulicas","Tubos, conexões e registros","Hidro Center","Material","Cartão de crédito","Pago",2340,"88711",3,"2026-08-08",2],
+    ["2026-07-12","Instalações hidráulicas","Serviço de encanador","José Hidráulica","Serviço","Pix","Pago",2600,""],
+    ["2026-07-14","Mão de obra","Diárias — semana 3","Equipe Sr. Nilton","Mão de obra","Pix","Pago",2400,""],
+    ["2026-07-19","Instalações elétricas","Cabos, disjuntores, quadro e tomadas","Elétrica Total","Material","Boleto","Pago",3480,"40219"],
+    ["2026-07-24","Instalações elétricas","Eletricista — instalação completa","Marcos Eletricista","Mão de obra","Pix","Pago",2900,""],
+    ["2026-07-26","Mão de obra","Diárias — semana 4","Equipe Sr. Nilton","Mão de obra","Pix","Pago",2400,""],
+    ["2026-08-02","Revestimentos e pisos","Porcelanato 90x90 — 46m²","Casa do Porcelanato","Material","Cartão de crédito","Pago",8940,"77120",6,"2026-09-02",1],
+    ["2026-08-05","Revestimentos e pisos","Argamassa AC-III e rejunte epóxi","Depósito São Jorge","Material","Pix","Pago",1620,""],
+    ["2026-08-09","Mão de obra","Diárias — semanas 5 e 6","Equipe Sr. Nilton","Mão de obra","Pix","Pago",4800,""],
+    ["2026-08-14","Revestimentos e pisos","Assentamento — complemento de material","Casa do Porcelanato","Material","Pix","Pago",1780,""],
+    ["2026-08-18","Gesso e forro","Forro de gesso com sanca — 28m²","Gesso Nobre","Serviço","Boleto","Pago",5100,"3391"],
+    ["2026-08-23","Esquadrias (portas/janelas)","Janela maxim-ar + porta de correr (sinal)","Alumínio Prime","Material","Transferência","Pago",3900,""],
+    ["2026-08-27","Mão de obra","Diárias — semanas 7 e 8","Equipe Sr. Nilton","Mão de obra","Pix","Pago",4800,""],
+    ["2026-09-01","Louças e metais","Cooktop, coifa e cuba inox","Eletro Casa","Material","Cartão de crédito","A pagar",5490,"90233",10,"2026-10-01",0],
+    ["2026-09-03","Marcenaria e móveis","Armários planejados — sinal 40%","Marcenaria Bonfim","Material","Transferência","Pago",9200,"1187"],
+    ["2026-09-06","Pintura","Massa corrida, selador e tinta acrílica","Tintas Vellore","Material","Pix","Pago",1980,""],
+    ["2026-09-09","Esquadrias (portas/janelas)","Janela e porta — saldo na entrega","Alumínio Prime","Material","Boleto","A pagar",3600,""],
+    ["2026-09-10","Mão de obra","Diárias — semanas 9 e 10","Equipe Sr. Nilton","Mão de obra","Pix","A pagar",4800,"",1,"2026-09-18",0]
+  ];
+  gs.forEach(([data,categoria,descricao,fornecedor,tipo,pagamento,status,valor,nf,parcelas,venc1,pagas])=>
+    state.gastos.push({id:uid(),obraId:id,data,categoria,descricao,fornecedor,tipo,pagamento,status,valor,nf,
+      parcelas: parcelas||1, venc1: venc1||data,
+      parcelasPagas: pagas!=null ? pagas : (status==="Pago" ? (parcelas||1) : 0),
+      fotos:[]}));
+  save();
+}
+
+/* ---------------- boot ---------------- */
+if(new URLSearchParams(location.search).get("demo")==="1" && !state.obras.length) seedDemo();
+if(!state.obraAtiva && state.obras.length) state.obraAtiva = state.obras[0].id;
+render();
+if(!Suporte.local) mostrarAvisoStorage("sem");
+window.addEventListener("scroll", hideTip, {passive:true});
+
+/* Redesenha só quando a tela troca de faixa (celular <-> desktop, ou ao girar):
+   os gráficos usam dimensões diferentes em cada uma. */
+let tela = tierTela();
+addEventListener("resize", debounce(()=>{
+  const novo = tierTela();
+  if(novo !== tela){ tela = novo; render(); }
+}, 220));
+</script>
+</body>
+</html>
