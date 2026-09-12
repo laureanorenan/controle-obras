@@ -9,9 +9,6 @@
 <meta name="apple-mobile-web-app-title" content="Obras">
 <meta name="format-detection" content="telephone=no">
 <title>Controle de Obras — Orçamento x Realizado</title>
-<!-- biblioteca do Supabase servida do próprio site: sem CDN externo, o app continua
-     autocontido e não quebra se o CDN estiver fora do ar ou bloqueado -->
-<script src="vendor-supabase.js"></script>
 <style>
 :root{
   color-scheme: light;
@@ -209,14 +206,6 @@ tfoot td{font-weight:650;border-top:1px solid var(--axis);border-bottom:0;backgr
 .lightbox .lbbar button{background:rgba(255,255,255,.14);border:0;color:#fff;padding:7px 14px;border-radius:9px;cursor:pointer;font-weight:550}
 .lightbox .lbbar button:hover{background:rgba(255,255,255,.26)}
 
-/* ---------- login ---------- */
-.login{position:fixed;inset:0;z-index:150;background:var(--plane);display:none;align-items:center;justify-content:center;padding:20px}
-.login.on{display:flex}
-.login-card{background:var(--surface-1);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow);
-  padding:26px;width:min(400px,100%)}
-.login-card .field input{font-size:16px;padding:11px 12px}
-.login-card .brand{padding:0}
-
 /* ---------- toast ---------- */
 .toast{position:fixed;left:50%;bottom:26px;transform:translate(-50%,14px);z-index:140;background:var(--ink);color:var(--surface-1);
   padding:10px 18px;border-radius:99px;font-size:13px;font-weight:530;opacity:0;transition:.18s;pointer-events:none;box-shadow:var(--shadow)}
@@ -356,12 +345,9 @@ tfoot td{font-weight:650;border-top:1px solid var(--axis);border-bottom:0;backgr
         <div class="menuwrap">
           <button class="btn" id="btnMenu" aria-label="Mais opções" aria-expanded="false">⋯</button>
           <div class="menu" id="menu">
-            <div style="padding:7px 11px;color:var(--ink-muted);font-size:11.5px;border-bottom:1px solid var(--border);margin-bottom:3px"
-                 id="quemSou"></div>
             <button id="btnTheme">Tema claro / escuro</button>
             <button id="btnExport">Exportar backup</button>
             <button id="btnImport">Importar backup</button>
-            <button id="btnSair" style="color:var(--critical)">Sair desta conta</button>
             <input type="file" id="fileImport" accept="application/json,.json" class="hidden">
           </div>
         </div>
@@ -370,26 +356,6 @@ tfoot td{font-weight:650;border-top:1px solid var(--axis);border-bottom:0;backgr
     <div id="avisoStorage" class="alert hidden" style="margin-bottom:14px"></div>
     <div id="views"></div>
   </main>
-</div>
-
-<div id="login" class="login">
-  <div class="login-card">
-    <div class="brand" style="margin-bottom:18px">
-      <div class="mark">OB</div>
-      <div><h1>Controle de Obras<small>Orçado × Realizado</small></h1></div>
-    </div>
-    <p style="margin:0 0 16px;color:var(--ink-2);font-size:13px">
-      Entre para ver seus lançamentos. Os dados ficam na sua conta e aparecem em qualquer aparelho.
-    </p>
-    <div class="field"><label>E-mail</label><input type="email" id="lgEmail" autocomplete="username" placeholder="voce@exemplo.com"></div>
-    <div class="field"><label>Senha</label><input type="password" id="lgSenha" autocomplete="current-password" placeholder="pelo menos 6 caracteres"></div>
-    <div id="lgErro" class="hidden" style="color:var(--critical);font-size:12.5px;margin:-4px 0 12px"></div>
-    <button class="btn primary" id="lgEntrar" style="width:100%;justify-content:center;padding:12px">Entrar</button>
-    <button class="btn" id="lgCriar" style="width:100%;justify-content:center;margin-top:8px">Criar conta</button>
-    <p style="margin:14px 0 0;color:var(--ink-muted);font-size:11.5px">
-      Primeira vez neste aparelho? Use <b>Criar conta</b> se ainda não tiver uma; depois é só Entrar.
-    </p>
-  </div>
 </div>
 
 <div class="modal-bg" id="mConfirm"><div class="modal" style="max-width:440px">
@@ -491,135 +457,58 @@ const CATS = ["Projeto e documentação","Demolição e remoção","Fundação e
   "Instalações elétricas","Instalações hidráulicas","Esquadrias (portas/janelas)","Revestimentos e pisos",
   "Gesso e forro","Pintura","Marcenaria e móveis","Louças e metais","Mão de obra","Limpeza e outros"];
 
-/* ============================================================
-   Supabase — o banco que os aparelhos compartilham.
-   A chave abaixo é publicável de propósito: quem manda é o RLS,
-   que só devolve as linhas de quem está logado.
-   ============================================================ */
-const SUPABASE_URL = "https://inlkyyjqfrokohdgfswd.supabase.co";
-const SUPABASE_KEY = "sb_publishable_Jy_Htveu81VI0-WGwJlO_g_lieqPAZT";
-const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const KEY = "obras.controle.v1";
+const uid = () => Math.random().toString(36).slice(2,10);
 
-const KEY = "obras.cache.v2";          // cache local: abrir rápido e ler sem sinal
-const PREF = "obras.pref.v2";          // preferências do aparelho (obra ativa, tema)
-const uid = () => (crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2,10));
-
-let state = { obras:[], orcamento:[], gastos:[], obraAtiva:null };
-let usuario = null;
-let offline = false;
+let state = load();
 let view = "painel";
 let filtro = {cat:"", tipo:"", status:"", q:""};
 
-/** Grava o cache local. O banco é escrito pelas funções Dados.* */
+function load(){
+  try{
+    const raw = localStorage.getItem(KEY);
+    if(raw) return migrar(JSON.parse(raw));
+  }catch(e){ console.warn("localStorage indisponível:", e.message); }
+  return { obras:[], orcamento:[], gastos:[], obraAtiva:null };
+}
+/** Compatibilidade com dados salvos antes do parcelamento e das fotos */
+function migrar(d){
+  (d.gastos||[]).forEach(g=>{
+    if(g.parcelas == null) g.parcelas = 1;
+    if(!g.venc1) g.venc1 = g.data;
+    if(g.parcelasPagas == null) g.parcelasPagas = (g.status === "Pago") ? g.parcelas : 0;
+    if(!Array.isArray(g.fotos)) g.fotos = [];
+  });
+  return d;
+}
+let avisouFalha = false;
 function save(){
   try{
-    localStorage.setItem(KEY, JSON.stringify({...state, em:Date.now()}));
-    localStorage.setItem(PREF, JSON.stringify({obraAtiva:state.obraAtiva}));
-  }catch(e){ console.warn("cache local indisponível:", e.message); }
-}
-function lerCache(){
-  try{
-    const d = JSON.parse(localStorage.getItem(KEY) || "null");
-    if(d) return {obras:d.obras||[], orcamento:d.orcamento||[], gastos:d.gastos||[], obraAtiva:d.obraAtiva||null, em:d.em};
-  }catch(e){}
-  return null;
-}
-function limparCache(){ try{ localStorage.removeItem(KEY); }catch(e){} }
-
-/* --- tradução entre o formato do banco (snake_case) e o do app --- */
-const doBanco = {
-  obra:  r => ({id:r.id, nome:r.nome, descricao:r.descricao||"", inicio:r.inicio||"", previsao:r.previsao||"", status:r.status}),
-  item:  r => ({id:r.id, obraId:r.obra_id, categoria:r.categoria, descricao:r.descricao||"", obs:r.obs||"", valor:Number(r.valor)}),
-  gasto: r => ({id:r.id, obraId:r.obra_id, data:r.data, categoria:r.categoria, descricao:r.descricao||"",
-                fornecedor:r.fornecedor||"", tipo:r.tipo, pagamento:r.pagamento, valor:Number(r.valor), nf:r.nf||"",
-                parcelas:r.parcelas, venc1:r.venc1||r.data, parcelasPagas:r.parcelas_pagas, fotos:r.fotos||[],
-                status: r.parcelas_pagas >= r.parcelas ? "Pago" : "A pagar"})
-};
-const proBanco = {
-  obra:  o => ({nome:o.nome, descricao:o.descricao||"", inicio:o.inicio||null, previsao:o.previsao||null, status:o.status}),
-  item:  b => ({obra_id:b.obraId, categoria:b.categoria, descricao:b.descricao||"", obs:b.obs||"", valor:b.valor}),
-  gasto: g => ({obra_id:g.obraId, data:g.data, categoria:g.categoria, descricao:g.descricao||"",
-                fornecedor:g.fornecedor||"", tipo:g.tipo, pagamento:g.pagamento, valor:g.valor, nf:g.nf||"",
-                parcelas:g.parcelas, venc1:g.venc1||g.data, parcelas_pagas:g.parcelasPagas, fotos:g.fotos||[]})
-};
-
-const Dados = {
-  async carregar(){
-    const [o,b,g] = await Promise.all([
-      sb.from("obras").select("*").order("criado_em"),
-      sb.from("orcamento").select("*").order("criado_em"),
-      sb.from("gastos").select("*").order("data")
-    ]);
-    const erro = o.error || b.error || g.error;
-    if(erro) throw erro;
-    state.obras     = o.data.map(doBanco.obra);
-    state.orcamento = b.data.map(doBanco.item);
-    state.gastos    = g.data.map(doBanco.gasto);
-    if(!state.obras.some(x=>x.id===state.obraAtiva)) state.obraAtiva = (state.obras[0]||{}).id || null;
-    offline = false;
-    esconderAviso();
-    save();
-  },
-  async criarObra(o){
-    const {data,error} = await sb.from("obras").insert(proBanco.obra(o)).select().single();
-    if(error) throw error; return doBanco.obra(data);
-  },
-  async editarObra(id,o){
-    const {data,error} = await sb.from("obras").update(proBanco.obra(o)).eq("id",id).select().single();
-    if(error) throw error; return doBanco.obra(data);
-  },
-  async criarItem(b){
-    const {data,error} = await sb.from("orcamento").insert(proBanco.item(b)).select().single();
-    if(error) throw error; return doBanco.item(data);
-  },
-  async editarItem(id,b){
-    const {data,error} = await sb.from("orcamento").update(proBanco.item(b)).eq("id",id).select().single();
-    if(error) throw error; return doBanco.item(data);
-  },
-  async apagarItem(id){
-    const {error} = await sb.from("orcamento").delete().eq("id",id); if(error) throw error;
-  },
-  async criarGasto(g){
-    const {data,error} = await sb.from("gastos").insert(proBanco.gasto(g)).select().single();
-    if(error) throw error; return doBanco.gasto(data);
-  },
-  async editarGasto(id,g){
-    const {data,error} = await sb.from("gastos").update(proBanco.gasto(g)).eq("id",id).select().single();
-    if(error) throw error; return doBanco.gasto(data);
-  },
-  async apagarGasto(id){
-    const {error} = await sb.from("gastos").delete().eq("id",id); if(error) throw error;
-  },
-  async marcarParcelas(id,n){
-    const {data,error} = await sb.from("gastos").update({parcelas_pagas:n}).eq("id",id).select().single();
-    if(error) throw error; return doBanco.gasto(data);
-  }
-};
-
-/** Envolve uma escrita: mostra erro legível em vez de falhar em silêncio. */
-async function gravar(fn, oQue){
-  try{ return await fn(); }
-  catch(e){
-    console.error("falha ao gravar:", e);
-    const rede = /fetch|network|Failed to fetch/i.test(e.message||"");
-    toast(rede ? `Sem conexão — ${oQue} não foi salvo. Tente de novo.` : `Não consegui salvar ${oQue}: ${e.message}`, 5000);
-    if(rede) marcarOffline();
-    return null;
+    localStorage.setItem(KEY, JSON.stringify(state));
+    avisouFalha = false;
+  }catch(e){
+    console.warn("Não foi possível salvar:", e.message);
+    if(!avisouFalha){
+      avisouFalha = true;
+      toast("Este navegador não está guardando os dados. Exporte um backup antes de sair.", 6000);
+      mostrarAvisoStorage("falha");
+    }
   }
 }
-function marcarOffline(){
-  offline = true;
-  mostrarAviso(`<b>Sem conexão com o banco.</b> Você está vendo a última versão baixada neste aparelho. Para lançar, reconecte e recarregue a página.`);
-}
-function mostrarAviso(html){
+
+/** localStorage e IndexedDB existem de verdade neste navegador? */
+const Suporte = {
+  local: (()=>{ try{ localStorage.setItem("__t","1"); localStorage.removeItem("__t"); return true; }catch(e){ return false; } })(),
+  idb: (()=>{ try{ return !!window.indexedDB; }catch(e){ return false; } })()
+};
+function mostrarAvisoStorage(motivo){
   const el = document.getElementById("avisoStorage");
   if(!el) return;
-  el.innerHTML = `<span class="dot" style="background:var(--critical);width:10px;height:10px;margin-top:5px;flex:0 0 10px"></span><span>${html}</span>`;
+  const txt = motivo==="falha"
+    ? `<b>O navegador recusou salvar.</b> Costuma ser falta de espaço ou navegação privada. Use <b>Exportar backup</b> agora — o que está na tela ainda não foi gravado.`
+    : `<b>Este navegador não guarda dados.</b> Você pode consultar e lançar, mas ao fechar perde tudo. No iPhone isso acontece quando o arquivo abre na pré-visualização do app Arquivos — use <b>Exportar backup</b> antes de sair.`;
+  el.innerHTML = `<span class="dot" style="background:var(--critical);width:10px;height:10px;margin-top:5px;flex:0 0 10px"></span><span>${txt}</span>`;
   el.classList.remove("hidden");
-}
-function esconderAviso(){
-  const el = document.getElementById("avisoStorage");
-  if(el) el.classList.add("hidden");
 }
 
 /* ---------------- helpers ---------------- */
@@ -743,44 +632,41 @@ function toast(msg, ms=2600){
 }
 
 /* ============================================================
-   Fotos — bucket privado no Supabase, uma pasta por usuário.
-   O caminho é "<user_id>/<uuid>.jpg"; as políticas do bucket só
-   deixam cada um mexer na sua própria pasta.
+   Fotos — guardadas em IndexedDB (localStorage não comporta imagens)
    ============================================================ */
 const Fotos = (()=>{
-  const cache = new Map();                       // caminho -> objectURL já baixado
-  const bucket = () => sb.storage.from("fotos");
-  const paraBlob = dataUrl => fetch(dataUrl).then(r=>r.blob());
+  let dbp = null;
+  function open(){
+    if(!dbp) dbp = new Promise((res,rej)=>{
+      const r = indexedDB.open("obras-fotos", 1);
+      r.onupgradeneeded = ()=> r.result.createObjectStore("fotos");
+      r.onsuccess = ()=> res(r.result);
+      r.onerror  = ()=> rej(r.error);
+    });
+    return dbp;
+  }
+  const tx = async (modo, fn)=>{
+    const db = await open();
+    return new Promise((res,rej)=>{
+      const t = db.transaction("fotos", modo), st = t.objectStore("fotos");
+      const q = fn(st);
+      t.oncomplete = ()=> res(q && q.result);
+      t.onerror = ()=> rej(t.error);
+    });
+  };
   return {
-    novoCaminho: () => `${usuario.id}/${uid()}.jpg`,
-    async enviar(caminho, dataUrl){
-      const blob = await paraBlob(dataUrl);
-      const {error} = await bucket().upload(caminho, blob, {contentType:"image/jpeg", upsert:true});
-      if(error) throw error;
-      cache.set(caminho, dataUrl);
-    },
-    async ler(caminho){
-      if(cache.has(caminho)) return cache.get(caminho);
-      const {data,error} = await bucket().download(caminho);
-      if(error || !data) return null;
-      const url = URL.createObjectURL(data);
-      cache.set(caminho, url);
-      return url;
-    },
-    async apagar(caminho){
-      cache.delete(caminho);
-      const {error} = await bucket().remove([caminho]);
-      if(error) console.warn("foto não removida:", error.message);
-    },
-    async many(caminhos){
+    set: (id,dataUrl)=> tx("readwrite", st=> st.put(dataUrl, id)),
+    get: id => tx("readonly",  st=> st.get(id)),
+    del: id => tx("readwrite", st=> st.delete(id)),
+    async many(ids){
       const out = {};
-      for(const c of caminhos||[]){ const u = await Fotos.ler(c); if(u) out[c] = u; }
+      for(const id of ids){ const v = await Fotos.get(id); if(v) out[id]=v; }
       return out;
     }
   };
 })();
 
-/** Reduz a imagem antes de enviar — foto de celular passa de 4MB para ~200KB */
+/** Reduz a imagem antes de guardar — foto de celular passa de 4MB para ~200KB */
 function comprimir(file, max=1600, q=0.72){
   return new Promise((res,rej)=>{
     const url = URL.createObjectURL(file), img = new Image();
@@ -1370,13 +1256,11 @@ function act(a,id){
   if(a==="csvParcelas") csvParcelas();
   if(a==="verFotos"){ const g = state.gastos.find(x=>x.id===id); if(g) abrirFotos(g.fotos); }
 }
-async function act2(a, id, i){
+function act2(a, id, i){
   if(a==="pagarAte"){
     const g = state.gastos.find(x=>x.id===id); if(!g) return;
-    const n = Math.max(g.parcelasPagas||0, +i);
-    const r = await gravar(()=>Dados.marcarParcelas(id, n), "a baixa da parcela");
-    if(!r) return;
-    Object.assign(g, r);
+    g.parcelasPagas = Math.max(g.parcelasPagas||0, +i);
+    if(g.parcelasPagas >= (g.parcelas||1)) g.status = "Pago";
     save(); render();
     toast(`Parcela ${i} marcada como paga.`);
   }
@@ -1432,18 +1316,13 @@ function openObra(id){
   $("#oStatus").value = o?o.status:"Em andamento";
   openModal("#mObra");
 }
-$("#oSalvar").onclick = async ()=>{
+$("#oSalvar").onclick = ()=>{
   const nome = $("#oNome").value.trim();
   if(!nome) return $("#oNome").focus();
   const id = $("#oId").value;
   const data = {nome, descricao:$("#oDesc").value.trim(), inicio:$("#oIni").value, previsao:$("#oFim").value, status:$("#oStatus").value};
-  ocupado("#oSalvar", true);
-  const r = id ? await gravar(()=>Dados.editarObra(id,data), "a obra")
-               : await gravar(()=>Dados.criarObra(data), "a obra");
-  ocupado("#oSalvar", false);
-  if(!r) return;
-  if(id) Object.assign(state.obras.find(o=>o.id===id), r);
-  else { state.obras.push(r); state.obraAtiva = r.id; }
+  if(id) Object.assign(state.obras.find(o=>o.id===id), data);
+  else { const n={id:uid(),...data}; state.obras.push(n); state.obraAtiva=n.id; }
   save(); closeAll(); render();
 };
 
@@ -1459,27 +1338,17 @@ function openOrc(id){
   $("#bExcluir").classList.toggle("hidden", !b);
   openModal("#mOrc");
 }
-$("#bSalvar").onclick = async ()=>{
+$("#bSalvar").onclick = ()=>{
   const o = obraAtual(); if(!o) return;
   const id = $("#bId").value;
   const data = {obraId:o.id, categoria:$("#bCat").value, valor:parseNum($("#bValor").value),
                 descricao:$("#bDesc").value.trim(), obs:$("#bObs").value.trim()};
-  ocupado("#bSalvar", true);
-  const r = id ? await gravar(()=>Dados.editarItem(id,data), "o item")
-               : await gravar(()=>Dados.criarItem(data), "o item");
-  ocupado("#bSalvar", false);
-  if(!r) return;
-  if(id) Object.assign(state.orcamento.find(b=>b.id===id), r);
-  else state.orcamento.push(r);
+  if(id) Object.assign(state.orcamento.find(b=>b.id===id), data);
+  else state.orcamento.push({id:uid(),...data});
   save(); closeAll(); render();
 };
-$("#bExcluir").onclick = async ()=>{
-  const id = $("#bId").value;
-  ocupado("#bExcluir", true);
-  const ok = await gravar(()=>Dados.apagarItem(id).then(()=>true), "a exclusão");
-  ocupado("#bExcluir", false);
-  if(!ok) return;
-  state.orcamento = state.orcamento.filter(b=>b.id!==id);
+$("#bExcluir").onclick = ()=>{
+  const id=$("#bId").value; state.orcamento = state.orcamento.filter(b=>b.id!==id);
   save(); closeAll(); render();
 };
 
@@ -1553,7 +1422,12 @@ function pintarThumbs(){
   $("#gThumbs").querySelectorAll("button[data-rm]").forEach(b=>
     b.onclick = ()=> { fotosAtuais.splice(+b.dataset.rm,1); pintarThumbs(); });
 }
-$("#gDrop").onclick = ()=> $("#gFile").click();
+if(!Suporte.idb){                       // sem IndexedDB não há onde guardar as fotos
+  $("#gDrop").textContent = "Fotos indisponíveis neste navegador — abra o arquivo em um navegador completo (Safari, Chrome) para anexar imagens.";
+  $("#gDrop").style.cursor = "default";
+  $("#gDrop").style.borderStyle = "solid";
+}
+$("#gDrop").onclick = ()=> Suporte.idb && $("#gFile").click();
 $("#gDrop").addEventListener("dragover", e=>{ e.preventDefault(); });
 $("#gDrop").addEventListener("drop", e=>{ e.preventDefault(); addFotos(e.dataTransfer.files); });
 $("#gFile").onchange = e=>{ addFotos(e.target.files); e.target.value=""; };
@@ -1562,7 +1436,7 @@ async function addFotos(files){
   if(!lista.length) return;
   toast(`Reduzindo ${lista.length} foto(s)…`, 1500);
   for(const f of lista){
-    try{ fotosAtuais.push({id: Fotos.novoCaminho(), url: await comprimir(f), nova:true}); }
+    try{ fotosAtuais.push({id:uid()+uid(), url: await comprimir(f)}); }
     catch(err){ console.warn("foto ignorada:", f.name, err.message); }
   }
   pintarThumbs();
@@ -1576,52 +1450,29 @@ $("#gSalvar").onclick = async ()=>{
   const pagas = n>1 ? Math.max(0, Math.min(n, Math.round(parseNum($("#gPagas").value)||0)))
                     : ($("#gStatus").value==="Pago" ? 1 : 0);
   const id = $("#gId").value;
-  const ids = fotosAtuais.map(f=>f.id);
 
-  ocupado("#gSalvar", true);
-  // 1) sobe as fotos novas; se alguma falhar, o lançamento não é gravado pela metade
-  const fotosOk = await gravar(async ()=>{
-    for(const f of fotosAtuais) if(f.nova) await Fotos.enviar(f.id, f.url);
-    return true;
-  }, "as fotos");
-  if(!fotosOk){ ocupado("#gSalvar", false); return; }
+  // grava as fotos novas e apaga as que saíram
+  const ids = fotosAtuais.map(f=>f.id);
+  try{
+    for(const f of fotosAtuais) if(!fotosOriginais.includes(f.id)) await Fotos.set(f.id, f.url);
+    for(const antigo of fotosOriginais) if(!ids.includes(antigo)) await Fotos.del(antigo);
+  }catch(e){ toast("Não consegui salvar as fotos: "+e.message, 4000); }
 
   const data = {obraId:o.id, data:$("#gData").value, categoria:$("#gCat").value, valor:v,
     descricao:$("#gDesc").value.trim(), fornecedor:$("#gForn").value.trim(),
     tipo:$("#gTipo").value, pagamento:$("#gPag").value, nf:$("#gNf").value.trim(),
     parcelas:n, venc1:$("#gVenc").value || $("#gData").value, parcelasPagas:pagas,
-    fotos: ids};
-  const r = id ? await gravar(()=>Dados.editarGasto(id,data), "o lançamento")
-               : await gravar(()=>Dados.criarGasto(data), "o lançamento");
-  ocupado("#gSalvar", false);
-  if(!r) return;
-
-  // 2) só depois de gravar, apaga do bucket as fotos que o usuário removeu
-  for(const antigo of fotosOriginais) if(!ids.includes(antigo)) Fotos.apagar(antigo);
-
-  if(id) Object.assign(state.gastos.find(g=>g.id===id), r);
-  else state.gastos.push(r);
+    status: pagas>=n ? "Pago" : "A pagar", fotos: ids};
+  if(id) Object.assign(state.gastos.find(g=>g.id===id), data);
+  else state.gastos.push({id:uid(),...data});
   save(); closeAll(); render();
 };
 $("#gExcluir").onclick = async ()=>{
   const id = $("#gId").value, g = state.gastos.find(x=>x.id===id);
-  ocupado("#gExcluir", true);
-  const ok = await gravar(()=>Dados.apagarGasto(id).then(()=>true), "a exclusão");
-  ocupado("#gExcluir", false);
-  if(!ok) return;
-  if(g) for(const f of (g.fotos||[])) Fotos.apagar(f);
+  if(g) for(const f of (g.fotos||[])) { try{ await Fotos.del(f); }catch(e){} }
   state.gastos = state.gastos.filter(x=>x.id!==id);
   save(); closeAll(); render();
 };
-
-/** Desabilita o botão enquanto a gravação está em curso, para não duplicar registro. */
-function ocupado(sel, sim){
-  const b = $(sel); if(!b) return;
-  b.disabled = sim;
-  b.style.opacity = sim ? .6 : "";
-  if(sim){ b.dataset.txt = b.textContent; b.textContent = "Salvando…"; }
-  else if(b.dataset.txt){ b.textContent = b.dataset.txt; delete b.dataset.txt; }
-}
 
 /* ---------------- topo ---------------- */
 document.getElementById("nav").onclick = e=>{
@@ -1695,73 +1546,15 @@ $("#fileImport").onchange = e=>{
           "Substituir os dados deste aparelho?", "Substituir");
         if(!ok) return toast("Importação cancelada — nada foi alterado.");
       }
-      await importarParaOBanco(d);
+      if(d.fotos) for(const [id,url] of Object.entries(d.fotos)){ try{ await Fotos.set(id,url); }catch(err){} }
+      state = migrar({obras:d.obras||[], orcamento:d.orcamento||[], gastos:d.gastos||[],
+                      obraAtiva:d.obraAtiva||(d.obras[0]&&d.obras[0].id)});
+      save(); render();
+      toast(`Backup restaurado: ${state.obras.length} obra(s), ${state.gastos.length} lançamento(s).`, 3500);
     }catch(err){ toast("Não consegui ler este arquivo: "+err.message, 4000); }
   };
   r.readAsText(f); e.target.value="";
 };
-/** Sobe um backup (o do app antigo, sem banco, ou um exportado daqui) para o Supabase. */
-async function importarParaOBanco(d){
-  const obras = d.obras||[], itens = d.orcamento||[], gastos = d.gastos||[];
-  toast(`Enviando ${obras.length} obra(s) e ${gastos.length} lançamento(s)…`, 4000);
-
-  // apaga o que já existe (a confirmação acima já avisou). Filhos primeiro e de
-  // forma explícita: não depende do cascade do banco para não deixar órfão.
-  if(state.obras.length){
-    const ids = state.obras.map(o=>o.id);
-    const r = await gravar(async ()=>{
-      for(const tabela of ["gastos","orcamento"]){
-        const {error} = await sb.from(tabela).delete().in("obra_id", ids);
-        if(error) throw error;
-      }
-      const {error} = await sb.from("obras").delete().in("id", ids);
-      if(error) throw error;
-      return true;
-    }, "a limpeza dos dados antigos");
-    if(!r) return;
-  }
-
-  const mapaObra = {}, fotosDoBackup = d.fotos || {};
-  const ok = await gravar(async ()=>{
-    for(const o of obras){
-      const nova = await Dados.criarObra(o);
-      mapaObra[o.id] = nova.id;
-    }
-    const linhasItens = itens.map(b => proBanco.item({...b, obraId: mapaObra[b.obraId]})).filter(x=>x.obra_id);
-    if(linhasItens.length){
-      const {error} = await sb.from("orcamento").insert(linhasItens);
-      if(error) throw error;
-    }
-    // fotos do backup antigo (data URLs guardadas por id) viram arquivos no bucket
-    const mapaFoto = {};
-    for(const [idAntigo, dataUrl] of Object.entries(fotosDoBackup)){
-      try{
-        const caminho = Fotos.novoCaminho();
-        await Fotos.enviar(caminho, dataUrl);
-        mapaFoto[idAntigo] = caminho;
-      }catch(e){ console.warn("foto não migrada:", idAntigo, e.message); }
-    }
-    const linhasGastos = gastos.map(g => proBanco.gasto({
-      ...g,
-      obraId: mapaObra[g.obraId],
-      parcelas: g.parcelas || 1,
-      venc1: g.venc1 || g.data,
-      parcelasPagas: g.parcelasPagas != null ? g.parcelasPagas : (g.status === "Pago" ? (g.parcelas||1) : 0),
-      fotos: (g.fotos||[]).map(f => mapaFoto[f] || f).filter(f => mapaFoto[f] || String(f).includes("/"))
-    })).filter(x=>x.obra_id);
-    if(linhasGastos.length){
-      const {error} = await sb.from("gastos").insert(linhasGastos);
-      if(error) throw error;
-    }
-    return true;
-  }, "a importação");
-  if(!ok) return;
-
-  await Dados.carregar();
-  render();
-  toast(`Backup restaurado: ${state.obras.length} obra(s), ${state.gastos.length} lançamento(s).`, 4000);
-}
-
 function csv(rows){ return "﻿"+rows.map(r=>r.map(c=>`"${String(c??"").replace(/"/g,'""')}"`).join(";")).join("\n"); }
 function csvAnalitico(){
   const t = totais();
@@ -1787,9 +1580,11 @@ function csvParcelas(){
 }
 
 /* ---------------- dados de exemplo ---------------- */
-async function seedDemo(){
-  const obraDemo = {nome:"Reforma da cozinha e área de serviço", descricao:"Casa — térreo",
-    inicio:"2026-06-15", previsao:"2026-10-30", status:"Em andamento"};
+function seedDemo(){
+  const id = uid();
+  state.obras.push({id, nome:"Reforma da cozinha e área de serviço", descricao:"Casa — térreo",
+    inicio:"2026-06-15", previsao:"2026-10-30", status:"Em andamento"});
+  state.obraAtiva = id;
   const orc = [
     ["Projeto e documentação","Projeto executivo + ART",3200,""],
     ["Demolição e remoção","Demolição de bancada e retirada de entulho",2800,"2 caçambas"],
@@ -1805,6 +1600,7 @@ async function seedDemo(){
     ["Mão de obra","Pedreiro + ajudante (12 semanas)",26000,"Diária R$ 320 + ajudante"],
     ["Limpeza e outros","Limpeza pós-obra e imprevistos",2500,""]
   ];
+  orc.forEach(([c,d,v,o])=> state.orcamento.push({id:uid(),obraId:id,categoria:c,descricao:d,valor:v,obs:o}));
   const gs = [
     ["2026-06-16","Projeto e documentação","Projeto executivo — 1ª parcela","Arq. Marina Alves","Serviço","Pix","Pago",1800,""],
     ["2026-06-20","Demolição e remoção","Caçamba de entulho (2un)","Limpa Já Caçambas","Serviço","Pix","Pago",760,""],
@@ -1831,93 +1627,19 @@ async function seedDemo(){
     ["2026-09-09","Esquadrias (portas/janelas)","Janela e porta — saldo na entrega","Alumínio Prime","Material","Boleto","A pagar",3600,""],
     ["2026-09-10","Mão de obra","Diárias — semanas 9 e 10","Equipe Sr. Nilton","Mão de obra","Pix","A pagar",4800,"",1,"2026-09-18",0]
   ];
-  const pacote = {
-    obras: [{id:"demo", ...obraDemo}],
-    orcamento: orc.map(([c,d,v,o])=>({id:uid(), obraId:"demo", categoria:c, descricao:d, valor:v, obs:o})),
-    gastos: gs.map(([data,categoria,descricao,fornecedor,tipo,pagamento,status,valor,nf,parcelas,venc1,pagas])=>({
-      id:uid(), obraId:"demo", data, categoria, descricao, fornecedor, tipo, pagamento, status, valor, nf,
+  gs.forEach(([data,categoria,descricao,fornecedor,tipo,pagamento,status,valor,nf,parcelas,venc1,pagas])=>
+    state.gastos.push({id:uid(),obraId:id,data,categoria,descricao,fornecedor,tipo,pagamento,status,valor,nf,
       parcelas: parcelas||1, venc1: venc1||data,
-      parcelasPagas: pagas!=null ? pagas : (status==="Pago" ? (parcelas||1) : 0), fotos:[]
-    }))
-  };
-  await importarParaOBanco(pacote);
-}
-
-/* ============================================================
-   Login
-   ============================================================ */
-function telaLogin(mostrar){
-  $("#login").classList.toggle("on", mostrar);
-  document.querySelector(".app").style.visibility = mostrar ? "hidden" : "";
-}
-function erroLogin(msg){
-  const el = $("#lgErro");
-  el.textContent = msg || "";
-  el.classList.toggle("hidden", !msg);
-}
-function traduzErro(e){
-  const m = (e && e.message) || "";
-  if(/Invalid login credentials/i.test(m)) return "E-mail ou senha incorretos.";
-  if(/User already registered/i.test(m))   return "Esse e-mail já tem conta. Use Entrar.";
-  if(/Password should be at least/i.test(m)) return "A senha precisa ter pelo menos 6 caracteres.";
-  if(/Unable to validate email/i.test(m) || /invalid format/i.test(m)) return "E-mail inválido.";
-  if(/fetch|network/i.test(m)) return "Sem conexão com o servidor.";
-  return m || "Não consegui entrar.";
-}
-async function entrar(criando){
-  const email = $("#lgEmail").value.trim(), senha = $("#lgSenha").value;
-  if(!email || !senha) return erroLogin("Preencha e-mail e senha.");
-  erroLogin(""); $("#lgEntrar").disabled = $("#lgCriar").disabled = true;
-  const fn = criando ? sb.auth.signUp({email, password:senha}) : sb.auth.signInWithPassword({email, password:senha});
-  const {data, error} = await fn.catch(e=>({error:e}));
-  $("#lgEntrar").disabled = $("#lgCriar").disabled = false;
-  if(error) return erroLogin(traduzErro(error));
-  if(!data.session) return erroLogin("Conta criada. Agora clique em Entrar.");
-  $("#lgSenha").value = "";
-  await iniciarSessao(data.session.user);
-}
-$("#lgEntrar").onclick = ()=> entrar(false);
-$("#lgCriar").onclick  = ()=> entrar(true);
-$("#lgSenha").addEventListener("keydown", e=>{ if(e.key==="Enter") entrar(false); });
-$("#btnSair").onclick = async ()=>{
-  await sb.auth.signOut();
-  limparCache();
-  location.reload();
-};
-
-async function iniciarSessao(u){
-  usuario = u;
-  $("#quemSou").textContent = u.email;
-  telaLogin(false);
-
-  // 1) cache: a tela aparece na hora, mesmo com internet ruim
-  const c = lerCache();
-  if(c){ state = {obras:c.obras, orcamento:c.orcamento, gastos:c.gastos, obraAtiva:c.obraAtiva}; render(); }
-  else { render(); }
-
-  // 2) banco: a versão de verdade
-  try{
-    await Dados.carregar();
-    render();
-  }catch(e){
-    console.error("falha ao carregar:", e);
-    if(c) marcarOffline();
-    else mostrarAviso(`<b>Não consegui falar com o banco.</b> ${esc(e.message||"")} — recarregue a página quando tiver conexão.`);
-  }
-
-  if(new URLSearchParams(location.search).get("demo")==="1" && !state.obras.length) await seedDemo();
+      parcelasPagas: pagas!=null ? pagas : (status==="Pago" ? (parcelas||1) : 0),
+      fotos:[]}));
+  save();
 }
 
 /* ---------------- boot ---------------- */
-(async ()=>{
-  try{ const p = JSON.parse(localStorage.getItem(PREF)||"null"); if(p) state.obraAtiva = p.obraAtiva; }catch(e){}
-  const {data:{session}} = await sb.auth.getSession();
-  if(session) await iniciarSessao(session.user);
-  else { telaLogin(true); }
-})();
-sb.auth.onAuthStateChange((evento, sess)=>{
-  if(evento === "SIGNED_OUT"){ usuario = null; telaLogin(true); }
-});
+if(new URLSearchParams(location.search).get("demo")==="1" && !state.obras.length) seedDemo();
+if(!state.obraAtiva && state.obras.length) state.obraAtiva = state.obras[0].id;
+render();
+if(!Suporte.local) mostrarAvisoStorage("sem");
 window.addEventListener("scroll", hideTip, {passive:true});
 
 /* Redesenha só quando a tela troca de faixa (celular <-> desktop, ou ao girar):

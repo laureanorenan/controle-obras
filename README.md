@@ -4,10 +4,16 @@ Controle de despesas de obra em casa: orçamento por etapa, lançamento de
 gastos, parcelamento no cartão, fotos de nota fiscal e previsão de
 desembolso mês a mês.
 
-Aplicativo de arquivo único — HTML, CSS e JavaScript em `index.html`, sem
-build, sem dependências e sem servidor. **Os dados ficam no navegador de
-quem abre**, não em nenhum servidor: abrir este site não dá acesso a dado
-nenhum de ninguém.
+Sem build e sem framework: HTML, CSS e JavaScript em `index.html`, mais a
+biblioteca do Supabase servida do próprio site (`vendor-supabase.js`, sem
+CDN externo).
+
+Os dados ficam numa conta: você entra com e-mail e senha e vê os mesmos
+lançamentos no computador e no celular. Cada conta só enxerga o que é dela
+— quem garante isso é o Row Level Security do Postgres, não o app.
+
+Existe também `local.html`: a versão anterior, sem conta e sem internet,
+que guarda tudo no navegador do aparelho. Serve de plano B.
 
 ![Painel](previews/painel.png)
 
@@ -65,11 +71,21 @@ Navegação na base, tabelas em cartões, formulário como folha pelo rodapé e
 gráficos redesenhados em escala maior. Dá para adicionar à tela de início
 pelo Safari e usar como app.
 
-**Os dados são por aparelho.** O navegador do iPhone e o do Mac têm bancos
-separados — não existe sincronização automática. Para passar dados de um
-para o outro, use **Exportar backup** / **Importar backup** no menu **⋯**.
-A importação substitui tudo e avisa antes: quem importa por último apaga o
-que o outro lançou.
+Entre com a mesma conta e os lançamentos aparecem — é o mesmo banco. O que
+você lançar no depósito está no computador quando chegar em casa.
+
+O app precisa de internet para gravar. Sem sinal ele ainda abre e mostra a
+última versão baixada naquele aparelho, com um aviso no topo; lançar exige
+conexão.
+
+## Segurança
+
+- A chave no código é a **publicável** do Supabase, feita para ficar no
+  navegador. Ela não dá acesso a nada sozinha.
+- Quem separa os dados é o RLS: cada tabela só devolve linhas onde
+  `user_id = auth.uid()`. As fotos ficam num bucket privado, numa pasta por
+  usuário, com a mesma regra.
+- A senha do Postgres não está no app e não é usada por ele.
 
 ## Backup e exportações
 
