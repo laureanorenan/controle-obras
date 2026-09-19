@@ -193,6 +193,7 @@ tfoot td{font-weight:650;border-top:1px solid var(--axis);border-bottom:0;backgr
 .empty{padding:46px 20px;text-align:center;color:var(--ink-muted)}
 .empty h4{color:var(--ink);margin:0 0 6px;font-size:15px}
 .alerts{display:grid;grid-template-columns:repeat(auto-fit,minmax(310px,1fr));gap:10px;margin-bottom:14px}
+.alerts.rodape{margin-bottom:0;margin-top:18px;padding-top:16px;border-top:1px solid var(--border)}
 .alert{display:flex;gap:10px;align-items:flex-start;padding:11px 14px;border-radius:10px;border:1px solid var(--border);background:var(--surface-1);font-size:13px}
 .alert .ic{width:18px;height:18px;flex:0 0 18px;margin-top:1px}
 .hidden{display:none!important}
@@ -1058,7 +1059,7 @@ function vDesembolso(){
   const maiorMes = [...d.meses].sort((a,b)=>(b.pago+b.previsto)-(a.pago+a.previsto))[0];
 
   const alertas = d.atrasadas.length
-    ? `<div class="alerts">${alerta("critical","Parcelas vencidas",
+    ? `<div class="alerts rodape">${alerta("critical","Parcelas vencidas",
         `${d.atrasadas.length} parcela(s) com vencimento passado e ainda em aberto, somando ${BRL(d.atrasadas.reduce((a,p)=>a+p.valor,0))}.`)}</div>`
     : "";
 
@@ -1079,7 +1080,7 @@ function vDesembolso(){
       <div class="delta">${maiorMes?mesBR(maiorMes.ym):"—"}</div></div>
   </div>`;
 
-  return `${alertas}${kpis}
+  return `${kpis}
   <div class="card" style="margin-bottom:14px">
     <div class="card-h"><div><h3>Desembolso por mês</h3>
       <p>Cada parcela cai no mês do seu vencimento. O painel mostra o custo da obra; aqui é quando o dinheiro sai.</p></div></div>
@@ -1117,7 +1118,8 @@ function vDesembolso(){
           <td class="num sec" data-l="Total">${N2(d.meses.reduce((a,m)=>a+m.pago+m.previsto,0))}</td></tr></tfoot>
       </table></div>` : `<div class="empty">Sem lançamentos.</div>`}
     </div>
-  </div>`;
+  </div>
+  ${alertas}`;
 }
 
 /* ============================================================
@@ -1152,14 +1154,17 @@ function vazioGeral(){
 function vPainel(){
   const t = totais(), rows = analitico(), gs = gastosDaObra();
   const s = sitConsumo(t.consumo);
-  const estouradas = rows.filter(r=>r.consumo>100);
+  const estouradas = rows.filter(r=>isFinite(r.consumo) && r.consumo>100);
+  const semOrcamento = rows.filter(r=>r.consumo===Infinity);
   const proximas  = rows.filter(r=>r.consumo>=90 && r.consumo<=100);
 
   let alertas = "";
-  if(estouradas.length || proximas.length || t.apagar>0){
-    alertas = `<div class="alerts">`;
+  if(estouradas.length || semOrcamento.length || proximas.length || t.apagar>0){
+    alertas = `<div class="alerts rodape">`;
     if(estouradas.length) alertas += alerta("critical","Estourou o orçamento",
       `${estouradas.length} etapa(s) acima do previsto: ${estouradas.map(r=>esc(r.cat)+" ("+Math.round(r.consumo)+"%)").join(", ")}.`);
+    if(semOrcamento.length) alertas += alerta("critical","Gasto sem orçamento",
+      `${semOrcamento.length} etapa(s) com lançamento e nenhum valor orçado: ${semOrcamento.map(r=>esc(r.cat)).join(", ")}. Defina o orçamento dessas etapas para acompanhar o consumo.`);
     if(proximas.length) alertas += alerta("warning","Perto do limite",
       `${proximas.length} etapa(s) entre 90% e 100% do orçado: ${proximas.map(r=>esc(r.cat)).join(", ")}.`);
     if(t.apagar>0) alertas += alerta("serious","Ainda a desembolsar",
@@ -1185,7 +1190,7 @@ function vPainel(){
       <div class="delta">Ticket médio ${BRL(gs.length? t.realizado/gs.length : 0)}</div></div>
   </div>`;
 
-  return `${alertas}${kpis}
+  return `${kpis}
   <div class="grid2">
     <div class="card">
       <div class="card-h"><div><h3>Orçado × realizado por etapa</h3><p>Barra superior: previsto. Inferior: gasto. O % à direita é o consumo do orçamento da etapa.</p></div></div>
@@ -1207,7 +1212,8 @@ function vPainel(){
     <div class="card-h"><div><h3>Visão analítica por etapa</h3><p>Mesma informação do gráfico em números — exportável para CSV.</p></div>
       <button class="btn sm" data-act="csvAnalitico">Exportar CSV</button></div>
     ${tabelaAnalitica(rows, t)}
-  </div>`;
+  </div>
+  ${alertas}`;
 }
 function alerta(kind,tit,txt){
   const cor = {critical:"var(--critical)",warning:"var(--warning)",serious:"var(--serious)"}[kind];
