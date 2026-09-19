@@ -3,11 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#f9f9f7" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#0d0d0d" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f4f8fb" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#001b2e" media="(prefers-color-scheme: dark)">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Obras">
 <meta name="format-detection" content="telephone=no">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Roboto+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <title>Controle de Obras — Orçamento x Realizado</title>
 <!-- biblioteca do Supabase servida do próprio site: sem CDN externo, o app continua
      autocontido e não quebra se o CDN estiver fora do ar ou bloqueado -->
@@ -15,46 +17,50 @@
 <style>
 :root{
   color-scheme: light;
-  --surface-1:#fcfcfb;
-  --plane:#f9f9f7;
-  --ink:#0b0b0b;
-  --ink-2:#52514e;
-  --ink-muted:#898781;
-  --grid:#e1e0d9;
-  --axis:#c3c2b7;
-  --border:rgba(11,11,11,.10);
-  --series-1:#2a78d6;   /* orçado */
-  --series-2:#eb6834;   /* realizado */
-  --seq-100:#cde2fb;
-  --good:#0ca30c;
-  --warning:#fab219;
-  --serious:#ec835a;
-  --critical:#d03b3b;
-  --good-text:#006300;
-  --shadow:0 1px 2px rgba(11,11,11,.05), 0 8px 24px rgba(11,11,11,.05);
+  --surface-1:#ffffff;
+  --plane:#f4f8fb;
+  --ink:#00263f;
+  --ink-2:#004070;
+  --ink-muted:#4d6f88;
+  --grid:#dce7ef;
+  --axis:#b7cad8;
+  --border:#d6e3ec;
+  --series-1:#0d6cb0;   /* orçado */
+  --series-2:#3f9c7c;   /* realizado */
+  --seq-100:#cfe0ee;
+  --good:#0c7a59;
+  --warning:#8a5a00;
+  --serious:#b3541e;
+  --critical:#b3261e;
+  --good-text:#0c7a59;
+  --shadow:0 1px 2px rgba(0,38,63,.08), 0 8px 24px rgba(0,38,63,.06);
   --r:12px;
 }
 :root[data-theme="dark"]{
   color-scheme: dark;
-  --surface-1:#1a1a19;
-  --plane:#0d0d0d;
+  --surface-1:#002a45;
+  --plane:#001b2e;
   --ink:#ffffff;
-  --ink-2:#c3c2b7;
-  --ink-muted:#898781;
-  --grid:#2c2c2a;
-  --axis:#383835;
-  --border:rgba(255,255,255,.10);
-  --series-1:#3987e5;
-  --series-2:#d95926;
-  --seq-100:#184f95;
-  --good-text:#0ca30c;
-  --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.35);
+  --ink-2:#dfeaf2;
+  --ink-muted:#9dbdd3;
+  --grid:#0d3c5c;
+  --axis:#1d5a83;
+  --border:#14486e;
+  --series-1:#2f86c6;
+  --series-2:#35a98a;
+  --seq-100:#0d3c5c;
+  --good:#66cdaa;
+  --warning:#f0b429;
+  --serious:#ffab6b;
+  --critical:#ff8a80;
+  --good-text:#8fe0c2;
+  --shadow:0 1px 2px rgba(0,0,0,.5), 0 8px 24px rgba(0,0,0,.4);
 }
 *{box-sizing:border-box}
 html,body{height:100%}
 body{
   margin:0;background:var(--plane);color:var(--ink);
-  font:14px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif;
+  font:14px/1.5 Roboto,system-ui,-apple-system,"Segoe UI",sans-serif;
   -webkit-font-smoothing:antialiased;
 }
 button,input,select,textarea{font:inherit;color:inherit}
@@ -159,7 +165,7 @@ th{
 td{padding:10px 12px;border-bottom:1px solid var(--grid);vertical-align:middle}
 tbody tr:last-child td{border-bottom:0}
 tbody tr:hover{background:var(--plane)}
-.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.num{text-align:right;font-family:"Roboto Mono",ui-monospace,Menlo,monospace;font-variant-numeric:tabular-nums;white-space:nowrap}
 tfoot td{font-weight:650;border-top:1px solid var(--axis);border-bottom:0;background:var(--plane)}
 .badge{display:inline-flex;align-items:center;gap:6px;padding:2px 9px;border-radius:99px;font-size:11.5px;font-weight:550;border:1px solid var(--border);white-space:nowrap}
 .tag{display:inline-block;padding:2px 8px;border-radius:6px;background:var(--plane);border:1px solid var(--border);font-size:11.5px;color:var(--ink-2)}
