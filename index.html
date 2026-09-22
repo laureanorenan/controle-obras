@@ -3,13 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#f4f8fb" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#001b2e" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#F7F8FA" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#12151A" media="(prefers-color-scheme: dark)">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Obras">
 <meta name="format-detection" content="telephone=no">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Roboto+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700&display=swap" rel="stylesheet">
 <title>Controle de Obras — Orçamento x Realizado</title>
 <!-- biblioteca do Supabase servida do próprio site: sem CDN externo, o app continua
      autocontido e não quebra se o CDN estiver fora do ar ou bloqueado -->
@@ -17,50 +17,54 @@
 <style>
 :root{
   color-scheme: light;
-  --surface-1:#ffffff;
-  --plane:#f4f8fb;
-  --ink:#00263f;
-  --ink-2:#004070;
-  --ink-muted:#4d6f88;
-  --grid:#dce7ef;
-  --axis:#b7cad8;
-  --border:#d6e3ec;
-  --series-1:#0d6cb0;   /* orçado */
-  --series-2:#3f9c7c;   /* realizado */
-  --seq-100:#cfe0ee;
-  --good:#0c7a59;
-  --warning:#8a5a00;
-  --serious:#b3541e;
-  --critical:#b3261e;
-  --good-text:#0c7a59;
-  --shadow:0 1px 2px rgba(0,38,63,.08), 0 8px 24px rgba(0,38,63,.06);
-  --r:12px;
+  --surface-1:#FFFFFF;
+  --plane:#F7F8FA;
+  --ink:#1D232B;
+  --ink-2:#1D232B;
+  --ink-muted:#6B7280;
+  --grid:#E6E9EE;
+  --axis:#AEB4BE;
+  --border:#E6E9EE;
+  --series-1:#2457A7;   /* orçado */
+  --series-2:#198754;   /* realizado */
+  --seq-100:#E9EEF6;
+  --good:#198754;
+  --warning:#B54708;
+  --serious:#8C5E12;
+  --critical:#B42318;
+  --good-text:#198754;
+  --shadow:0 1px 2px #1D232B0F, 0 2px 8px #1D232B12;
+  --r:16px;
+  --on-brand:#FFFFFF;
+  --font-sans:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  --font-heading:"Manrope",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
 }
 :root[data-theme="dark"]{
   color-scheme: dark;
-  --surface-1:#002a45;
-  --plane:#001b2e;
-  --ink:#ffffff;
-  --ink-2:#dfeaf2;
-  --ink-muted:#9dbdd3;
-  --grid:#0d3c5c;
-  --axis:#1d5a83;
-  --border:#14486e;
-  --series-1:#2f86c6;
-  --series-2:#35a98a;
-  --seq-100:#0d3c5c;
-  --good:#66cdaa;
-  --warning:#f0b429;
-  --serious:#ffab6b;
-  --critical:#ff8a80;
-  --good-text:#8fe0c2;
-  --shadow:0 1px 2px rgba(0,0,0,.5), 0 8px 24px rgba(0,0,0,.4);
+  --surface-1:#1B1F26;
+  --plane:#12151A;
+  --ink:#F2F4F7;
+  --ink-2:#DDE1E7;
+  --ink-muted:#9AA3AF;
+  --grid:#2A2F37;
+  --axis:#4A515C;
+  --border:#2A2F37;
+  --series-1:#6CA0E0;
+  --series-2:#3FCB86;
+  --seq-100:#16233A;
+  --good:#3FCB86;
+  --warning:#F59E5B;
+  --serious:#E3A542;
+  --critical:#F07A6E;
+  --good-text:#3FCB86;
+  --shadow:0 2px 8px #00000099;
+  --on-brand:#12151A;
 }
 *{box-sizing:border-box}
 html,body{height:100%}
 body{
   margin:0;background:var(--plane);color:var(--ink);
-  font:14px/1.5 Roboto,system-ui,-apple-system,"Segoe UI",sans-serif;
+  font:14px/1.5 var(--font-sans);
   -webkit-font-smoothing:antialiased;
 }
 button,input,select,textarea{font:inherit;color:inherit}
@@ -73,7 +77,7 @@ button,input,select,textarea{font:inherit;color:inherit}
   display:flex;flex-direction:column;gap:22px;position:sticky;top:0;height:100vh;
 }
 .brand{display:flex;align-items:center;gap:10px;padding:0 6px}
-.brand .mark{width:30px;height:30px;border-radius:9px;background:var(--series-1);display:grid;place-items:center;color:#fff;font-weight:700;font-size:13px}
+.brand .mark{width:30px;height:30px;border-radius:9px;background:var(--series-1);display:grid;place-items:center;color:var(--on-brand);font-weight:700;font-size:13px}
 .brand h1{font-size:14px;margin:0;font-weight:650;letter-spacing:-.01em}
 .brand small{display:block;color:var(--ink-muted);font-weight:400;font-size:11.5px}
 .nav{display:flex;flex-direction:column;gap:2px}
@@ -109,7 +113,7 @@ main{flex:1;min-width:0;padding:22px 26px 60px}
   cursor:pointer;font-weight:550;display:inline-flex;align-items:center;gap:7px;white-space:nowrap;
 }
 .btn:hover{background:var(--plane)}
-.btn.primary{background:var(--series-1);border-color:transparent;color:#fff}
+.btn.primary{background:var(--series-1);border-color:transparent;color:var(--on-brand)}
 .btn.primary:hover{filter:brightness(1.07)}
 .btn.ghost{background:none}
 .btn.sm{padding:4px 9px;font-size:12.5px;border-radius:7px}
@@ -165,7 +169,7 @@ th{
 td{padding:10px 12px;border-bottom:1px solid var(--grid);vertical-align:middle}
 tbody tr:last-child td{border-bottom:0}
 tbody tr:hover{background:var(--plane)}
-.num{text-align:right;font-family:"Roboto Mono",ui-monospace,Menlo,monospace;font-variant-numeric:tabular-nums;white-space:nowrap}
+.num{text-align:right;font-family:var(--font-sans);font-variant-numeric:tabular-nums;white-space:nowrap}
 tfoot td{font-weight:650;border-top:1px solid var(--axis);border-bottom:0;background:var(--plane)}
 .badge{display:inline-flex;align-items:center;gap:6px;padding:2px 9px;border-radius:99px;font-size:11.5px;font-weight:550;border:1px solid var(--border);white-space:nowrap}
 .tag{display:inline-block;padding:2px 8px;border-radius:6px;background:var(--plane);border:1px solid var(--border);font-size:11.5px;color:var(--ink-2)}
@@ -328,6 +332,14 @@ tfoot td{font-weight:650;border-top:1px solid var(--axis);border-bottom:0;backgr
   .kpis{gap:9px}
   .topbar h2{font-size:17px}
 }
+
+/* ── Identidade visual RLhub 2026 ─────────────────────────────────────
+   Manrope nos títulos, Inter no texto e nos números, cartões separados
+   por borda e espaço (sem sombra), azul profundo só para ação e navegação. */
+h1,h2,h3 { font-family:var(--font-heading); letter-spacing:-.01em; }
+.brand .mark { background:var(--seq-100); color:var(--series-1); font-family:var(--font-heading); border-radius:12px; }
+.card, .login-card { box-shadow:none; }
+.nav button[aria-current="true"] { color:var(--series-1); }
 </style>
 </head>
 <body>
